@@ -70,8 +70,8 @@ class @LossLayer
 layers.Accuracy =
 class @AccuracyLayer
     constructor: (attribs) ->
-        params = attribs?.accuracy_param
-        @axis = getValueOrDefault params.axis, 1
+        params = attribs?.accuracy_param?
+        @axis = getValueOrDefault params?.axis, 1
 
     inferShapes: (bottoms, tops) =>
         unless tops?[0]? then return
