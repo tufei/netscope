@@ -3,10 +3,10 @@
 A web-based tool for visualizing neural network topologies. It currently supports UC Berkeley's [Caffe framework](https://github.com/bvlc/caffe).
 
 ### Documentation
-- [The Quick Start Guide](http://ethereon.github.io/netscope/quickstart.html)
+- [The Quick Start Guide](http://tufei.github.io/netscope/quickstart.html)
 
 ### Demo
-- [Visualization of the Deep Convolutional Neural Network "AlexNet"](http://ethereon.github.io/netscope/#/preset/alexnet)
+- [Visualization of the Deep Convolutional Neural Network "AlexNet"](http://tufei.github.io/netscope/#/preset/alexnet)
 
 ### License
 
