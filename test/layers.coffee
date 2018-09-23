@@ -114,7 +114,6 @@ runInnerProductTasks = (tasks) ->
         return text
     runLayerTasks tasks, makeInnerProductTaskName, compareInnerProductOutput
 
-
 runConcatTasks = (tasks) ->
     makeCaffeConcatParams = (axis) ->
         params = { }
@@ -148,6 +147,18 @@ runCropTasks = (tasks) ->
         text += " where axis = #{axis}" if axis?
         return text
     runLayerTasks tasks, makeCropTaskName, compareCropOutput
+
+runSplitTasks = (tasks) ->
+    makeCaffeSplitParams = () ->
+        return null
+    compareSplitOutput = (task) ->
+        compareLayerOutput layers.SplitLayer, makeCaffeSplitParams, task
+    makeSplitTaskName = (task) ->
+        [inputShape, outputShape] = task
+        text = "from [ #{inputShape} ]"
+        text += " to #{outputShape}"
+        return text
+    runLayerTasks tasks, makeSplitTaskName, compareSplitOutput
 
 describe 'Compute 2D Convolution output shape', ->
     # [ input shape, expecting output shape ]
@@ -313,4 +324,11 @@ describe 'Compute Crop output shape', ->
         [ [[64, 32, 20, 32], [64, 16, 15, 30]], [64, 32, 20, 30], 3 ]
     ]
     runCropTasks tasks
+
+describe 'Compute Split output shape', ->
+    # [ input shape, expecting output shape ]
+    tasks = [
+        [ [1, 21, 44, 44], [1, 21, 44, 44] ]
+    ]
+    runSplitTasks tasks
 

@@ -348,6 +348,21 @@ class @CropLayer
         if bottoms?.length != 2
             throw 'Crop layer must have exactly two bottom blobs.'
 
+
+layers.Split =
+class @SplitLayer
+    inferShapes: (bottoms, tops) =>
+        unless tops?[0]? then return
+        @checkParameters bottoms, tops
+        outputShape = bottoms[0].shape[..]
+        for i in [0...tops.length]
+            tops[i].shape = outputShape
+
+    checkParameters: (bottoms, tops) =>
+        if bottoms?.length != 1
+            throw 'Split layer must have exactly one bottom blob.'
+
+
 isLossLayer = (layerType) ->
     /loss/i.test layerType
 
