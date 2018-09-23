@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/ethereon/netscope#readme",
   "devDependencies": {
-    "coffeeify": "^2.0.1",
-    "watchify": "^3.7.0"
+    "coffeeify": "^2.1.0",
+    "watchify": "^3.11.0"
   }
 }
