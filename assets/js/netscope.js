@@ -636,7 +636,7 @@ layers.Accuracy = this.AccuracyLayer = (function() {
     this.checkParameters(bottoms, tops);
     tops[0].shape = [1];
     if (tops[1]) {
-      return tops[1].shape = bottoms[0].shape[this.axis];
+      return tops[1].shape = [bottoms[0].shape[this.axis]];
     }
   };
 

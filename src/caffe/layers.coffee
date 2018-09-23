@@ -77,7 +77,7 @@ class @AccuracyLayer
         unless tops?[0]? then return
         @checkParameters bottoms, tops
         tops[0].shape = [ 1 ]
-        tops[1].shape = bottoms[0].shape[ @axis ] if tops[1]
+        tops[1].shape = [ bottoms[0].shape[ @axis ] ] if tops[1]
 
     checkParameters: (bottoms, tops) =>
         unless bottoms?.length == 2
