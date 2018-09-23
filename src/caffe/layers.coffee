@@ -67,6 +67,24 @@ class @LossLayer
         # Loss layer always returns scalar
         tops[0].shape = [ 1 ]
 
+layers.Accuracy =
+class @AccuracyLayer
+    constructor: (attribs) ->
+        params = attribs?.accuracy_param
+        @axis = getValueOrDefault params.axis, 1
+
+    inferShapes: (bottoms, tops) =>
+        unless tops?[0]? then return
+        @checkParameters bottoms, tops
+        tops[0].shape = [ 1 ]
+        tops[1].shape = bottoms[0].shape[ @axis ] if tops[1]
+
+    checkParameters: (bottoms, tops) =>
+        unless bottoms?.length == 2
+            throw "Accuracy layer must have two inputs."
+        unless tops?.length in [1, 2]
+            throw 'Outputs number of Accuracy layer must be equal to one or two.'
+
 layers.Data =
 class @DataLayer
     constructor: (attribs) ->

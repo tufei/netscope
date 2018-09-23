@@ -140,7 +140,7 @@ runCropTasks = (tasks) ->
         compareLayerOutput layers.CropLayer, makeCaffeCropParams, task
     makeCropTaskName = (task) ->
         [inputShapes, outputShape, axis] = task
-        return  'from ['
+        text = 'from ['
         for shape in inputShapes
             text += " [ #{shape} ]"
         text += " ] to #{outputShape}"
@@ -159,6 +159,29 @@ runSplitTasks = (tasks) ->
         text += " to #{outputShape}"
         return text
     runLayerTasks tasks, makeSplitTaskName, compareSplitOutput
+
+runAccuracyTasks = (tasks) ->
+    makeCaffeAccuracyParams = (axis) ->
+        params = { }
+        params.axis = axis if axis?
+        return { accuracy_param: params }
+    compareAccuracyOutput = (task) ->
+        compareLayerOutput layers.AccuracyLayer, makeCaffeAccuracyParams, task
+    makeAccuracyTaskName = (task) ->
+        [inputShapes, outputShapes, axis] = task
+        text = 'from ['
+        for shape in inputShapes
+            text += " [ #{shape} ]"
+        if outputShapes.length == 1
+            text += " ] to #{outputShapes}"
+        else
+            text += ' ] to ['
+            for out_shape in outputShapes
+                text += " #{out_shape}"
+            text += ' ] '
+        text += " where axis = #{axis}" if axis?
+        return text
+    runLayerTasks tasks, makeAccuracyTaskName, compareAccuracyOutput
 
 describe 'Compute 2D Convolution output shape', ->
     # [ input shape, expecting output shape ]
@@ -331,4 +354,13 @@ describe 'Compute Split output shape', ->
         [ [1, 21, 44, 44], [1, 21, 44, 44] ]
     ]
     runSplitTasks tasks
+
+describe 'Compute Accuracy output shape', ->
+    # [ [bottom[0] shape, bottom[1] shape], expecting output shape, axis ]
+    tasks = [
+        [ [[1, 1000], [1000]], [1] ]
+        [ [[1, 1000], [1000]], [1], 1 ]
+        [ [[1, 1000], [1000]], [[1], 1000], 1 ]
+    ]
+    runAccuracyTasks tasks
 

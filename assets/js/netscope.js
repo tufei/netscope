@@ -620,6 +620,40 @@ layers.Loss = this.LossLayer = (function() {
 
 })();
 
+layers.Accuracy = this.AccuracyLayer = (function() {
+  function AccuracyLayer(attribs) {
+    this.checkParameters = bind(this.checkParameters, this);
+    this.inferShapes = bind(this.inferShapes, this);
+    var params;
+    params = attribs != null ? attribs.accuracy_param : void 0;
+    this.axis = getValueOrDefault(params.axis, 1);
+  }
+
+  AccuracyLayer.prototype.inferShapes = function(bottoms, tops) {
+    if ((tops != null ? tops[0] : void 0) == null) {
+      return;
+    }
+    this.checkParameters(bottoms, tops);
+    tops[0].shape = [1];
+    if (tops[1]) {
+      return tops[1].shape = bottoms[0].shape[this.axis];
+    }
+  };
+
+  AccuracyLayer.prototype.checkParameters = function(bottoms, tops) {
+    var ref;
+    if ((bottoms != null ? bottoms.length : void 0) !== 2) {
+      throw "Accuracy layer must have two inputs.";
+    }
+    if ((ref = tops != null ? tops.length : void 0) !== 1 && ref !== 2) {
+      throw 'Outputs number of Accuracy layer must be equal to one or two.';
+    }
+  };
+
+  return AccuracyLayer;
+
+})();
+
 layers.Data = this.DataLayer = (function() {
   function DataLayer(attribs) {
     this.tryExtractShapeFromMemoryDataLayer = bind(this.tryExtractShapeFromMemoryDataLayer, this);
