@@ -698,6 +698,7 @@ layers.PriorBox = this.PriorBoxLayer = (function() {
     } else {
       this.numAspectRatios = 0;
     }
+    console.log(this.flip + " " + this.numMinSizes + " " + this.numMaxSizes + " " + this.numAspectRatios);
     if (this.flip === true) {
       this.numAspectRatios *= 2;
     }

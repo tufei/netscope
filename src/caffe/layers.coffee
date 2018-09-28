@@ -116,6 +116,7 @@ class @PriorBoxLayer
             @numAspectRatios = aspect_ratio.length
         else
             @numAspectRatios = 0
+        console.log "#{@flip} #{@numMinSizes} #{@numMaxSizes} #{@numAspectRatios}"
         if @flip == true
             @numAspectRatios *= 2
         @numAspectRatios += 1
