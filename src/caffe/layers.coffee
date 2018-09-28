@@ -104,9 +104,18 @@ class @PriorBoxLayer
         unless params?.min_size?
             throw 'PriorBox layer must have min_size'
         @flip = getValueOrDefault params?.flip, false
-        @numMinSizes = getValueOrDefault params?.min_size.length, 1
-        @numMaxSizes = getValueOrDefault params?.max_size?.length, 0
-        @numAspectRatios = getValueOrDefault params?.aspect_ratio?.length, 0
+        min_size = utils.asArray params.min_size
+        @numMinSizes = min_size.length
+        if params.max_size?
+            max_size = utils.asArray params.max_size
+            @numMaxSizes = max_size.length
+        else
+            @numMaxSizes = 0
+        if params.aspect_ratio?
+            aspect_ratio = utils.asArray params.aspect_ratio
+            @numAspectRatios = aspect_ratio.length
+        else
+            @numAspectRatios = 0
         if @flip == true
             @numAspectRatios *= 2
         @numAspectRatios += 1

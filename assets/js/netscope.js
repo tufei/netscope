@@ -678,15 +678,26 @@ layers.PriorBox = this.PriorBoxLayer = (function() {
   function PriorBoxLayer(attribs) {
     this.checkParameters = bind(this.checkParameters, this);
     this.inferShapes = bind(this.inferShapes, this);
-    var params, ref, ref1;
+    var aspect_ratio, max_size, min_size, params;
     params = attribs != null ? attribs.prior_box_param : void 0;
     if ((params != null ? params.min_size : void 0) == null) {
       throw 'PriorBox layer must have min_size';
     }
     this.flip = getValueOrDefault(params != null ? params.flip : void 0, false);
-    this.numMinSizes = getValueOrDefault(params != null ? params.min_size.length : void 0, 1);
-    this.numMaxSizes = getValueOrDefault(params != null ? (ref = params.max_size) != null ? ref.length : void 0 : void 0, 0);
-    this.numAspectRatios = getValueOrDefault(params != null ? (ref1 = params.aspect_ratio) != null ? ref1.length : void 0 : void 0, 0);
+    min_size = utils.asArray(params.min_size);
+    this.numMinSizes = min_size.length;
+    if (params.max_size != null) {
+      max_size = utils.asArray(params.max_size);
+      this.numMaxSizes = max_size.length;
+    } else {
+      this.numMaxSizes = 0;
+    }
+    if (params.aspect_ratio != null) {
+      aspect_ratio = utils.asArray(params.aspect_ratio);
+      this.numAspectRatios = aspect_ratio.length;
+    } else {
+      this.numAspectRatios = 0;
+    }
     if (this.flip === true) {
       this.numAspectRatios *= 2;
     }

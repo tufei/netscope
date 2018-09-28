@@ -433,7 +433,7 @@ describe 'Compute Flatten output shape', ->
 describe 'Compute PriorBox output shape', ->
     # [ [bottom[0] shape, bottom[1] shape], expecting output shape, [ min_size, max_size, aspect_ratio, flip ] ]
     tasks = [
-        [ [[1, 32, 10, 10], [1, 3, 224, 224]], [ 1, 2, 2400 ], [[105.0], [150.0], [2.0, 3.0], true] ]
+        [ [[1, 32, 10, 10], [1, 3, 224, 224]], [ 1, 2, 2400 ], [105.0, 150.0, [2.0, 3.0], true] ]
     ]
     runPriorBoxTasks tasks
 
