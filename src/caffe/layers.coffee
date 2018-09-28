@@ -119,7 +119,6 @@ class @PriorBoxLayer
         if @flip == 'true'
             @numAspectRatios *= 2
         @numAspectRatios += 1
-        console.log "#{@flip} #{@numMinSizes} #{@numMaxSizes} #{@numAspectRatios}"
 
     inferShapes: (bottoms, tops) =>
         unless tops?[0]? then return
@@ -127,7 +126,6 @@ class @PriorBoxLayer
         tops[0].shape = [ ]
         tops[0].shape.push(1, 2)
         num_priors = @numMinSizes * @numAspectRatios + @numMaxSizes
-        console.log "num_priors=#{num_priors}"
         tops[0].shape.push(bottoms[0].shape[2] * bottoms[0].shape[3] * 4 * num_priors)
 
     checkParameters: (bottoms, tops) =>
