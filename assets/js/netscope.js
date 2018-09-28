@@ -676,13 +676,44 @@ layers.Flatten = this.FlattenLayer = (function() {
 
 layers.PriorBox = this.PriorBoxLayer = (function() {
   function PriorBoxLayer(attribs) {
-    var params, ref;
+    this.checkParameters = bind(this.checkParameters, this);
+    this.inferShapes = bind(this.inferShapes, this);
+    var params, ref, ref1;
     params = attribs != null ? attribs.prior_box_param : void 0;
-    if (!((params != null ? (ref = params.min_size) != null ? ref.length : void 0 : void 0) > 0)) {
+    if ((params != null ? params.min_size : void 0) == null) {
       throw 'PriorBox layer must have min_size';
     }
-    this.flip = (params != null ? params.flip : void 0) != null;
+    this.flip = getValueOrDefault(params != null ? params.flip : void 0, false);
+    this.numMinSizes = getValueOrDefault(params != null ? params.min_size.length : void 0, 1);
+    this.numMaxSizes = getValueOrDefault(params != null ? (ref = params.max_size) != null ? ref.length : void 0 : void 0, 0);
+    this.numAspectRatios = getValueOrDefault(params != null ? (ref1 = params.aspect_ratio) != null ? ref1.length : void 0 : void 0, 0);
+    if (this.flip === true) {
+      this.numAspectRatios *= 2;
+    }
+    this.numAspectRatios += 1;
   }
+
+  PriorBoxLayer.prototype.inferShapes = function(bottoms, tops) {
+    var num_priors;
+    if ((tops != null ? tops[0] : void 0) == null) {
+      return;
+    }
+    this.checkParameters(bottoms, tops);
+    tops[0].shape = [];
+    tops[0].shape.push(1, 2);
+    num_priors = this.numMinSizes * this.numAspectRatios + this.numMaxSizes;
+    return tops[0].shape.push(bottoms[0].shape[2] * bottoms[0].shape[3] * 4 * num_priors);
+  };
+
+  PriorBoxLayer.prototype.checkParameters = function(bottoms, tops) {
+    var ref, ref1;
+    if (((ref = bottoms[0]) != null ? (ref1 = ref.shape) != null ? ref1.length : void 0 : void 0) !== 4) {
+      throw 'PriorBox layer bottom must have dimension of 4.';
+    }
+    if ((tops != null ? tops.length : void 0) !== 1) {
+      throw 'Outputs number of PriorBox layer must be equal to one.';
+    }
+  };
 
   return PriorBoxLayer;
 

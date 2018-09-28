@@ -213,6 +213,26 @@ runFlattenTasks = (tasks) ->
         return text
     runLayerTasks tasks, makeFlattenTaskName, compareFlattenOutput
 
+runPriorBoxTasks = (tasks) ->
+    makeCaffePriorBoxParams = (min_size, max_size, aspect_ratio, flip) ->
+        params = { }
+        params.min_size = min_size if min_size?
+        params.max_size = max_size if max_size?
+        params.aspect_ratio = aspect_ratio if aspect_ratio?
+        params.flip = flip if flip?
+        return { prior_box_param: params }
+    comparePriorBoxOutput = (task) ->
+        compareLayerOutput layers.PriorBoxLayer, makeCaffePriorBoxParams, task
+    makePriorBoxTaskName = (task) ->
+        params = task[2]
+        text = "from [ #{task[0]} ] to [ #{task[1]} ]"
+        text += " where min_size = #{params[0]}" if params[0]?
+        text += " and max_size = #{params[1]}" if params[1]?
+        text += " and aspect_ratio = #{params[2]}" if params[2]?
+        text += " and flip = #{params[3]}" if params[3]?
+        return text
+    runLayerTasks tasks, makePriorBoxTaskName, comparePriorBoxOutput
+
 describe 'Compute 2D Convolution output shape', ->
     # [ input shape, expecting output shape ]
     # null means default parameter value
@@ -409,4 +429,11 @@ describe 'Compute Flatten output shape', ->
         [ [1, 8, 10, 10], [1, 80, 10], [1, -2] ]
     ]
     runFlattenTasks tasks
+
+describe 'Compute PriorBox output shape', ->
+    # [ [bottom[0] shape, bottom[1] shape], expecting output shape, [ min_size, max_size, aspect_ratio, flip ] ]
+    tasks = [
+        [ [[1, 32, 10, 10], [1, 3, 224, 224]], [ 1, 2, 2400 ], [[105.0], [150.0], [2.0, 3.0], true] ]
+    ]
+    runPriorBoxTasks tasks
 
