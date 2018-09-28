@@ -97,6 +97,35 @@ class @FlattenLayer
         unless @axis < bottoms[0].shape.length && @end_axis < bottoms[0].shape.length
             throw "Axis #{@axis} and/or End-Axis #{@end_axis} of Flatten layer larger than #{bottoms[0].shape.length}."
 
+layers.PriorBox =
+class @PriorBoxLayer
+    constructor: (attribs) ->
+        params = attribs?.prior_box_param
+        unless params?.min_size?.length > 0
+            throw 'PriorBox layer must have min_size'
+        @flip = getValueOrDefault params?.flip, false
+        @numMinSizes = getValueOrDefault params?.min_size.length, 1
+        @numMaxSizes = getValueOrDefault params?.max_size?.length, 0
+        @numAspectRatios = getValueOrDefault params?.aspect_ratio?.length, 0
+        if @flip == true
+            @numAspectRatios *= 2
+        @numAspectRatios += 1
+
+    inferShapes: (bottoms, tops) =>
+        unless tops?[0]? then return
+        @checkParameters bottoms, tops
+        tops[0].shape.push(1, 2)
+        num_priors = @numMinSizes * @numAspectRatios + @numMaxSizes
+        tops[0].shape.push(bottoms[0].shape[2] * bottoms[0].shape[3] * 4 * num_priors)
+
+    checkParameters: (bottoms, tops) =>
+        unless bottoms?.length == 1
+            throw 'PriorBox layer must have one input.'
+        unless bottoms[0]?.shape?.length == 4
+            throw 'PriorBox layer bottom must have dimension of 4.'
+        unless tops?.length == 1
+            throw 'Outputs number of PriorBox layer must be equal to one.'
+
 layers.Permute =
 class @PermuteLayer
     constructor: (attribs) ->

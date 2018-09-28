@@ -674,6 +674,20 @@ layers.Flatten = this.FlattenLayer = (function() {
 
 })();
 
+layers.PriorBox = this.PriorBoxLayer = (function() {
+  function PriorBoxLayer(attribs) {
+    var params, ref;
+    params = attribs != null ? attribs.prior_box_param : void 0;
+    if (!((params != null ? (ref = params.min_size) != null ? ref.length : void 0 : void 0) > 0)) {
+      throw 'PriorBox layer must have min_size';
+    }
+    this.flip = (params != null ? params.flip : void 0) != null;
+  }
+
+  return PriorBoxLayer;
+
+})();
+
 layers.Permute = this.PermuteLayer = (function() {
   function PermuteLayer(attribs) {
     this.checkParameters = bind(this.checkParameters, this);
