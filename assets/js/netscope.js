@@ -620,6 +620,82 @@ layers.Loss = this.LossLayer = (function() {
 
 })();
 
+layers.Permute = this.PermuteLayer = (function() {
+  function PermuteLayer(attribs) {
+    this.checkParameters = bind(this.checkParameters, this);
+    this.inferShapes = bind(this.inferShapes, this);
+    var params;
+    params = attribs != null ? attribs.permute_param : void 0;
+    if ((params != null ? params.order : void 0) == null) {
+      return;
+    }
+    this.orders = params.order;
+  }
+
+  PermuteLayer.prototype.inferShapes = function(bottoms, tops) {
+    var i, index, j, k, l, len, m, original_orders, ref, ref1, ref2, ref3, results, results1, results2;
+    if ((tops != null ? tops[0] : void 0) == null) {
+      return;
+    }
+    this.checkParameters(bottoms, tops);
+    if (this.orders == null) {
+      this.orders = (function() {
+        results = [];
+        for (var j = 0, ref = bottoms[0].shape.length; 0 <= ref ? j < ref : j > ref; 0 <= ref ? j++ : j--){ results.push(j); }
+        return results;
+      }).apply(this);
+    }
+    if (this.orders.length !== bottoms[0].shape.length) {
+      original_orders = (function() {
+        results1 = [];
+        for (var k = 0, ref1 = bottoms[0].shape.length; 0 <= ref1 ? k < ref1 : k > ref1; 0 <= ref1 ? k++ : k--){ results1.push(k); }
+        return results1;
+      }).apply(this);
+      console.log("Debug: " + this.orders + " " + original_orders);
+      ref2 = this.orders;
+      for (l = 0, len = ref2.length; l < len; l++) {
+        i = ref2[l];
+        index = original_orders.indexOf(i);
+        original_orders.splice(index, 1);
+      }
+      this.orders = this.orders.concat(original_orders);
+    }
+    tops[0].shape = [];
+    results2 = [];
+    for (i = m = 0, ref3 = bottoms[0].shape.length; 0 <= ref3 ? m < ref3 : m > ref3; i = 0 <= ref3 ? ++m : --m) {
+      results2.push(tops[0].shape.push(bottoms[0].shape[this.orders[i]]));
+    }
+    return results2;
+  };
+
+  PermuteLayer.prototype.checkParameters = function(bottoms, tops) {
+    var i, j, len, ref, ref1, results;
+    if ((bottoms != null ? bottoms.length : void 0) !== 1) {
+      throw "Permute layer must have one input.";
+    }
+    if ((tops != null ? tops.length : void 0) !== 1) {
+      throw 'Outputs number of Permute layer must be equal to one.';
+    }
+    if (!(((ref = this.orders) != null ? ref.length : void 0) <= bottoms[0].shape.length)) {
+      throw "Order rank " + this.orders.length + " of Permute layer exceeds blob dimension.";
+    }
+    ref1 = this.orders;
+    results = [];
+    for (j = 0, len = ref1.length; j < len; j++) {
+      i = ref1[j];
+      if (!(i < bottoms[0].shape.length)) {
+        throw "Axis " + i + " of Permute layer larger than " + bottoms[0].shape.length + ".";
+      } else {
+        results.push(void 0);
+      }
+    }
+    return results;
+  };
+
+  return PermuteLayer;
+
+})();
+
 layers.Accuracy = this.AccuracyLayer = (function() {
   function AccuracyLayer(attribs) {
     this.checkParameters = bind(this.checkParameters, this);

@@ -183,6 +183,20 @@ runAccuracyTasks = (tasks) ->
         return text
     runLayerTasks tasks, makeAccuracyTaskName, compareAccuracyOutput
 
+runPermuteTasks = (tasks) ->
+    makeCaffePermuteParams = (orders) ->
+        params = { }
+        params.order = orders if orders?
+        return { permute_param: params }
+    comparePermuteOutput = (task) ->
+        compareLayerOutput layers.PermuteLayer, makeCaffePermuteParams, task
+    makePermuteTaskName = (task) ->
+        [inputShape, outputShape, orders] = task
+        text = "from [ [ #{inputShape} ] ] to #{outputShape}"
+        text += " where orders = #{orders}" if orders?
+        return text
+    runLayerTasks tasks, makePermuteTaskName, comparePermuteOutput
+
 describe 'Compute 2D Convolution output shape', ->
     # [ input shape, expecting output shape ]
     # null means default parameter value
@@ -363,4 +377,12 @@ describe 'Compute Accuracy output shape', ->
         [ [[1, 1000], [1000]], [[1], [1000]], 1 ]
     ]
     runAccuracyTasks tasks
+
+describe 'Compute Permute output shape', ->
+    # [ input shape, expecting output shape, orders ]
+    tasks = [
+        [ [1, 8, 64, 128], [1, 64, 128, 8], [ [0, 2, 3, 1] ] ]
+        [ [1, 8, 64, 128], [1, 64, 8, 128], [ [0, 2] ] ]
+    ]
+    runPermuteTasks tasks
 
