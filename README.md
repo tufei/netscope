@@ -1,6 +1,6 @@
 # Netscope
 
-A web-based tool for visualizing neural network topologies. It currently supports UC Berkeley's [Caffe framework](https://github.com/bvlc/caffe).
+A web-based tool for visualizing neural network topologies. It currently supports UC Berkeley's [Caffe framework](https://github.com/bvlc/caffe) and some of its variants, like TI's [Caffe-jacinto](https://github.com/tidsp/caffe-jacinto).
 
 ### Documentation
 - [The Quick Start Guide](http://tufei.github.io/netscope/quickstart.html)
