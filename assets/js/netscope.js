@@ -703,6 +703,7 @@ layers.PriorBox = this.PriorBoxLayer = (function() {
       this.numAspectRatios *= 2;
     }
     this.numAspectRatios += 1;
+    console.log(this.flip + " " + this.numMinSizes + " " + this.numMaxSizes + " " + this.numAspectRatios);
   }
 
   PriorBoxLayer.prototype.inferShapes = function(bottoms, tops) {
@@ -714,7 +715,8 @@ layers.PriorBox = this.PriorBoxLayer = (function() {
     tops[0].shape = [];
     tops[0].shape.push(1, 2);
     num_priors = this.numMinSizes * this.numAspectRatios + this.numMaxSizes;
-    return tops[0].shape.push(bottoms[0].shape[2] * bottoms[0].shape[3] * 4 * num_priors);
+    console.log("num_priors=" + num_priors);
+    return tops[0].shape.push(bottoms[0].shape[-2] * bottoms[0].shape[-1] * 4 * num_priors);
   };
 
   PriorBoxLayer.prototype.checkParameters = function(bottoms, tops) {
