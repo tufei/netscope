@@ -620,6 +620,60 @@ layers.Loss = this.LossLayer = (function() {
 
 })();
 
+layers.Flatten = this.FlattenLayer = (function() {
+  function FlattenLayer(attribs) {
+    this.checkParameters = bind(this.checkParameters, this);
+    this.inferShapes = bind(this.inferShapes, this);
+    var params;
+    params = attribs != null ? attribs.flatten_param : void 0;
+    this.axis = getValueOrDefault(params != null ? params.axis : void 0, 1);
+    this.end_axis = getValueOrDefault(params != null ? params.end_axis : void 0, -1);
+  }
+
+  FlattenLayer.prototype.inferShapes = function(bottoms, tops) {
+    var i, j, k, l, ref, ref1, ref2, ref3, ref4, results, size;
+    if ((tops != null ? tops[0] : void 0) == null) {
+      return;
+    }
+    this.checkParameters(bottoms, tops);
+    if (this.axis < 0) {
+      this.axis = bottoms[0].shape.length + this.axis;
+    }
+    if (this.end_axis < 0) {
+      this.end_axis = bottoms[0].shape.length + this.end_axis;
+    }
+    tops[0].shape = [];
+    for (i = j = 0, ref = this.axis; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+      tops[0].shape.push(bottoms[0].shape[i]);
+    }
+    size = 1;
+    for (i = k = ref1 = this.axis, ref2 = this.end_axis; ref1 <= ref2 ? k <= ref2 : k >= ref2; i = ref1 <= ref2 ? ++k : --k) {
+      size = size * bottoms[0].shape[i];
+    }
+    tops[0].shape.push(size);
+    results = [];
+    for (i = l = ref3 = this.end_axis + 1, ref4 = bottoms[0].shape.length; ref3 <= ref4 ? l < ref4 : l > ref4; i = ref3 <= ref4 ? ++l : --l) {
+      results.push(tops[0].shape.push(bottoms[0].shape[i]));
+    }
+    return results;
+  };
+
+  FlattenLayer.prototype.checkParameters = function(bottoms, tops) {
+    if ((bottoms != null ? bottoms.length : void 0) !== 1) {
+      throw "Flatten layer must have one input.";
+    }
+    if ((tops != null ? tops.length : void 0) !== 1) {
+      throw 'Outputs number of Flatten layer must be equal to one.';
+    }
+    if (!(this.axis < bottoms[0].shape.length && this.end_axis < bottoms[0].shape.length)) {
+      throw "Axis " + this.axis + " and/or End-Axis " + this.end_axis + " of Flatten layer larger than " + bottoms[0].shape.length + ".";
+    }
+  };
+
+  return FlattenLayer;
+
+})();
+
 layers.Permute = this.PermuteLayer = (function() {
   function PermuteLayer(attribs) {
     this.checkParameters = bind(this.checkParameters, this);
@@ -651,7 +705,6 @@ layers.Permute = this.PermuteLayer = (function() {
         for (var k = 0, ref1 = bottoms[0].shape.length; 0 <= ref1 ? k < ref1 : k > ref1; 0 <= ref1 ? k++ : k--){ results1.push(k); }
         return results1;
       }).apply(this);
-      console.log("Debug: " + this.orders + " " + original_orders);
       ref2 = this.orders;
       for (l = 0, len = ref2.length; l < len; l++) {
         i = ref2[l];

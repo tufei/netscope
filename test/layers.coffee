@@ -197,6 +197,22 @@ runPermuteTasks = (tasks) ->
         return text
     runLayerTasks tasks, makePermuteTaskName, comparePermuteOutput
 
+runFlattenTasks = (tasks) ->
+    makeCaffeFlattenParams = (axis, end_axis) ->
+        params = { }
+        params.axis = axis if axis?
+        params.end_axis = end_axis if end_axis?
+        return { flatten_param: params }
+    compareFlattenOutput = (task) ->
+        compareLayerOutput layers.FlattenLayer, makeCaffeFlattenParams, task
+    makeFlattenTaskName = (task) ->
+        params = task[2]
+        text = "from [ #{task[0]} ] to [ #{task[1]} ]"
+        text += " where axis = #{params[0]}" if params[0]?
+        text += " and end_axis = #{params[1]}" if params[1]?
+        return text
+    runLayerTasks tasks, makeFlattenTaskName, compareFlattenOutput
+
 describe 'Compute 2D Convolution output shape', ->
     # [ input shape, expecting output shape ]
     # null means default parameter value
@@ -385,4 +401,12 @@ describe 'Compute Permute output shape', ->
         [ [1, 8, 64, 128], [1, 64, 8, 128], [ [0, 2] ] ]
     ]
     runPermuteTasks tasks
+
+describe 'Compute Flatten output shape', ->
+    # [ input shape, expecting output shape, [axis, end_axis] ]
+    tasks = [
+        [ [1, 8, 10, 10], [1, 800], [1] ]
+        [ [1, 8, 10, 10], [1, 80, 10], [1, -2] ]
+    ]
+    runFlattenTasks tasks
 

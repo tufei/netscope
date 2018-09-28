@@ -67,6 +67,36 @@ class @LossLayer
         # Loss layer always returns scalar
         tops[0].shape = [ 1 ]
 
+layers.Flatten =
+class @FlattenLayer
+    constructor: (attribs) ->
+        params = attribs?.flatten_param
+        @axis = getValueOrDefault params?.axis, 1
+        @end_axis = getValueOrDefault params?.end_axis, -1
+
+    inferShapes: (bottoms, tops) =>
+        unless tops?[0]? then return
+        @checkParameters bottoms, tops
+        @axis = bottoms[0].shape.length + @axis if @axis < 0
+        @end_axis = bottoms[0].shape.length + @end_axis if @end_axis < 0
+        tops[0].shape = [ ]
+        for i in [0...@axis]
+            tops[0].shape.push(bottoms[0].shape[i])
+        size = 1
+        for i in [@axis..@end_axis]
+            size = size * bottoms[0].shape[i]
+        tops[0].shape.push(size)
+        for i in [@end_axis + 1...bottoms[0].shape.length]
+            tops[0].shape.push(bottoms[0].shape[i])
+
+    checkParameters: (bottoms, tops) =>
+        unless bottoms?.length == 1
+            throw "Flatten layer must have one input."
+        unless tops?.length == 1
+            throw 'Outputs number of Flatten layer must be equal to one.'
+        unless @axis < bottoms[0].shape.length && @end_axis < bottoms[0].shape.length
+            throw "Axis #{@axis} and/or End-Axis #{@end_axis} of Flatten layer larger than #{bottoms[0].shape.length}."
+
 layers.Permute =
 class @PermuteLayer
     constructor: (attribs) ->
@@ -81,7 +111,6 @@ class @PermuteLayer
             @orders = [0...bottoms[0].shape.length]
         unless @orders.length == bottoms[0].shape.length
             original_orders = [0...bottoms[0].shape.length]
-            console.log "Debug: #{@orders} #{original_orders}"
             for i in @orders
                 index = original_orders.indexOf(i)
                 original_orders.splice(index, 1)
