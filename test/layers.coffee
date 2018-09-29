@@ -233,6 +233,24 @@ runPriorBoxTasks = (tasks) ->
         return text
     runLayerTasks tasks, makePriorBoxTaskName, comparePriorBoxOutput
 
+runReshapeTasks = (tasks) ->
+    makeCaffeReshapeParams = (shape, axis, num_axes) ->
+        params = { }
+        params.shape = shape if shape?
+        params.axis = axis if axis?
+        params.num_axes = num_axes if num_axes?
+        return { reshape_param: params }
+    compareReshapeOutput = (task) ->
+        compareLayerOutput layers.ReshapeLayer, makeCaffeReshapeParams, task
+    makeReshapeTaskName = (task) ->
+        params = task[2]
+        text = "from [ #{task[0]} ] to [ #{task[1]} ]"
+        text += " where shape = #{params[0]}" if params[0]?
+        text += " and axis = #{params[1]}" if params[1]?
+        text += " and num_axes = #{params[2]}" if params[2]?
+        return text
+    runLayerTasks tasks, makeReshapeTaskName, compareReshapeOutput
+
 describe 'Compute 2D Convolution output shape', ->
     # [ input shape, expecting output shape ]
     # null means default parameter value
@@ -438,4 +456,12 @@ describe 'Compute PriorBox output shape', ->
         [ [[1, 32, 10, 10], [1, 3, 224, 224]], [ 1, 2, 1600 ], [105.0, 150.0, [2.0, 3.0], 'false'] ]
     ]
     runPriorBoxTasks tasks
+
+describe 'Compute Reshape output shape', ->
+    # [ input shape, expecting output shape, [ shape, axis, num_axes ] ]
+    tasks = [
+        [ [2, 8], [2, 2, 4], [ [0, -1, 4] ] ]
+        [ [1, 40257], [1, 1917, 21], [ [0, -1, 21] ] ]
+    ]
+    runReshapeTasks tasks
 

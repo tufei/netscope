@@ -134,6 +134,62 @@ class @PriorBoxLayer
         unless tops?.length == 1
             throw 'Outputs number of PriorBox layer must be equal to one.'
 
+layers.Reshape
+class @ReshapeLayer
+    constructor: (attribs) ->
+        params = attribs?.reshape_param
+        unless params?.shape?
+            throw 'Reshape layer requires shape parameter'
+        @shape = utils.asArray params.shape
+        @axis = getValueOrDefault params.axis, 0
+        @num_axes = getValueOrDefault params.num_axes, -1
+
+    inferShapes: (bottoms, tops) =>
+        unless tops?[0]? then return
+        @checkParameters bottoms, tops
+        total_axes = bottoms[0].shape.length
+        if @axis < 0
+            @axis = total_axes + 1 + @axis
+        if @num_axes < 0
+            end_axis = total_axes + @num_axes
+        else
+            end_axis = @axis + @num_axes
+        total_size = 1
+        for i in [@axis..end_axis]
+            total_size *= bottoms[0].shape[i]
+        tops[0].shape = [ ]
+        for i in [0...@axis]
+            tops[0].shape.push(bottoms[0].shape[i])
+        partial_size = 1
+        for i in [0...@shape.length]
+            if @shape[i] == 0
+                tops[0].shape.push(bottoms[0].shape[@axis + i])
+                partial_size *= bottoms[0].shape[@axis + i]
+            else
+                if @shape[i] == -1
+                    tops[0].shape.push(-1)
+                else
+                    tops[0].shape.push(@shape[i])
+                    partial_size *= @shape[i]
+        infer_size = total_size // partial_size
+        unless infer_size * partial_size == total_size
+            throw "#{infersize} * #{partial_size} != #{total_size}"
+        index = tops[0].shape.indexOf(-1)
+        tops[0].shape.splice(index, 1, infer_size)
+        for i in [end_axis + 1...bottoms[0].shape.length]
+            tops[0].shape.push(bottoms[0].shape[i])
+
+    checkParameters: (bottoms, tops) =>
+        unless bottoms?.length == 1
+            throw "Reshape layer must have one input."
+        unless tops?.length == 1
+            throw 'Outputs number of Reshape layer must be equal to one.'
+        num_minus1 = 0
+        for i in [0...@shape.length]
+            if @shape[i] == -1 then num_minus1 += 1
+        unless num_minus1 < 2
+            throw 'Only one dimension of Reshape layer can be inferred.'
+
 layers.Permute =
 class @PermuteLayer
     constructor: (attribs) ->

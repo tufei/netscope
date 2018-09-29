@@ -730,6 +730,95 @@ layers.PriorBox = this.PriorBoxLayer = (function() {
 
 })();
 
+layers.Reshape;
+
+this.ReshapeLayer = (function() {
+  function ReshapeLayer(attribs) {
+    this.checkParameters = bind(this.checkParameters, this);
+    this.inferShapes = bind(this.inferShapes, this);
+    var params;
+    params = attribs != null ? attribs.reshape_param : void 0;
+    if ((params != null ? params.shape : void 0) == null) {
+      throw 'Reshape layer requires shape parameter';
+    }
+    this.shape = utils.asArray(params.shape);
+    this.axis = getValueOrDefault(params.axis, 0);
+    this.num_axes = getValueOrDefault(params.num_axes, -1);
+  }
+
+  ReshapeLayer.prototype.inferShapes = function(bottoms, tops) {
+    var end_axis, i, index, infer_size, j, k, l, m, partial_size, ref, ref1, ref2, ref3, ref4, ref5, results, total_axes, total_size;
+    if ((tops != null ? tops[0] : void 0) == null) {
+      return;
+    }
+    this.checkParameters(bottoms, tops);
+    total_axes = bottoms[0].shape.length;
+    if (this.axis < 0) {
+      this.axis = total_axes + 1 + this.axis;
+    }
+    if (this.num_axes < 0) {
+      end_axis = total_axes + this.num_axes;
+    } else {
+      end_axis = this.axis + this.num_axes;
+    }
+    total_size = 1;
+    for (i = j = ref = this.axis, ref1 = end_axis; ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
+      total_size *= bottoms[0].shape[i];
+    }
+    tops[0].shape = [];
+    for (i = k = 0, ref2 = this.axis; 0 <= ref2 ? k < ref2 : k > ref2; i = 0 <= ref2 ? ++k : --k) {
+      tops[0].shape.push(bottoms[0].shape[i]);
+    }
+    partial_size = 1;
+    for (i = l = 0, ref3 = this.shape.length; 0 <= ref3 ? l < ref3 : l > ref3; i = 0 <= ref3 ? ++l : --l) {
+      if (this.shape[i] === 0) {
+        tops[0].shape.push(bottoms[0].shape[this.axis + i]);
+        partial_size *= bottoms[0].shape[this.axis + i];
+      } else {
+        if (this.shape[i] === -1) {
+          tops[0].shape.push(-1);
+        } else {
+          tops[0].shape.push(this.shape[i]);
+          partial_size *= this.shape[i];
+        }
+      }
+    }
+    infer_size = Math.floor(total_size / partial_size);
+    if (infer_size * partial_size !== total_size) {
+      throw infersize + " * " + partial_size + " != " + total_size;
+    }
+    index = tops[0].shape.indexOf(-1);
+    tops[0].shape.splice(index, 1, infer_size);
+    results = [];
+    for (i = m = ref4 = end_axis + 1, ref5 = bottoms[0].shape.length; ref4 <= ref5 ? m < ref5 : m > ref5; i = ref4 <= ref5 ? ++m : --m) {
+      results.push(tops[0].shape.push(bottoms[0].shape[i]));
+    }
+    return results;
+  };
+
+  ReshapeLayer.prototype.checkParameters = function(bottoms, tops) {
+    var i, j, num_minus1, ref;
+    if ((bottoms != null ? bottoms.length : void 0) !== 1) {
+      throw "Reshape layer must have one input.";
+    }
+    if ((tops != null ? tops.length : void 0) !== 1) {
+      throw 'Outputs number of Reshape layer must be equal to one.';
+    }
+    num_minus1 = 0;
+    for (i = j = 0, ref = this.shape.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+      if (this.shape[i] === -1) {
+        num_minus1 += 1;
+      }
+    }
+    if (!(num_minus1 < 2)) {
+      throw 'Only one dimension of Reshape layer can be inferred.';
+    }
+  };
+
+  return ReshapeLayer;
+
+})();
+
 layers.Permute = this.PermuteLayer = (function() {
   function PermuteLayer(attribs) {
     this.checkParameters = bind(this.checkParameters, this);
