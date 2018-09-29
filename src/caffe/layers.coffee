@@ -171,7 +171,6 @@ class @ReshapeLayer
                 else
                     tops[0].shape.push(@shape[i])
                     partial_size *= @shape[i]
-        console.log "#{partial_size} #{@shape}"
         infer_size = total_size // partial_size
         unless infer_size * partial_size == total_size
             throw "#{infer_size} * #{partial_size} != #{total_size}"

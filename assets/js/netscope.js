@@ -781,7 +781,6 @@ layers.Reshape = this.ReshapeLayer = (function() {
         }
       }
     }
-    console.log(partial_size + " " + this.shape);
     infer_size = Math.floor(total_size / partial_size);
     if (infer_size * partial_size !== total_size) {
       throw infer_size + " * " + partial_size + " != " + total_size;
