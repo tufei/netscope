@@ -134,7 +134,7 @@ class @PriorBoxLayer
         unless tops?.length == 1
             throw 'Outputs number of PriorBox layer must be equal to one.'
 
-layers.Reshape
+layers.Reshape =
 class @ReshapeLayer
     constructor: (attribs) ->
         params = attribs?.reshape_param

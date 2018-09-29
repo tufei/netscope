@@ -730,9 +730,7 @@ layers.PriorBox = this.PriorBoxLayer = (function() {
 
 })();
 
-layers.Reshape;
-
-this.ReshapeLayer = (function() {
+layers.Reshape = this.ReshapeLayer = (function() {
   function ReshapeLayer(attribs) {
     this.checkParameters = bind(this.checkParameters, this);
     this.inferShapes = bind(this.inferShapes, this);
