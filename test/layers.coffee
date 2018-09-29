@@ -273,6 +273,24 @@ runDetectionOutputTasks = (tasks) ->
         return text
     runLayerTasks tasks, makeDetectionOutputTaskName, compareDetectionOutputOutput
 
+runArgMaxTasks = (tasks) ->
+    makeCaffeArgMaxParams = (axis, top_k, out_max_val) ->
+        params = { }
+        params.axis = axis if axis?
+        params.top_k = top_k if top_k?
+        params.out_max_val = out_max_val if out_max_val?
+        return { argmax_param: params }
+    compareArgMaxOutput = (task) ->
+        compareLayerOutput layers.ArgMaxLayer, makeCaffeArgMaxParams, task
+    makeArgMaxTaskName = (task) ->
+        params = task[2]
+        text = "from [ #{task[0]} ] to [ #{task[1]} ]"
+        text += " where axis = #{params[0]}" if params[0]?
+        text += " and top_k = #{params[1]}" if params[1]?
+        text += " and out_max_val = #{params[2]}" if params[2]?
+        return text
+    runLayerTasks tasks, makeArgMaxTaskName, compareArgMaxOutput
+
 describe 'Compute 2D Convolution output shape', ->
     # [ input shape, expecting output shape ]
     # null means default parameter value
@@ -493,4 +511,12 @@ describe 'Compute DetectionOutput output shape', ->
         [ [[1, 7668], [1, 40257], [1, 2, 7668]], [ 100, 7 ], [21, 'true', 100] ]
     ]
     runDetectionOutputTasks tasks
+
+describe 'Compute ArgMax output shape', ->
+    # [ bottom[0] shape, expecting output shape, [ axis, top_k, out_max_val ] ]
+    tasks = [
+        [ [1, 21, 256, 512], [ 1, 1, 256, 512 ], [1] ]
+        [ [1, 21, 256, 512], [ 1, 5, 256, 512 ], [1, 5] ]
+    ]
+    runArgMaxTasks tasks
 

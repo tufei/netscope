@@ -683,7 +683,7 @@ layers.PriorBox = this.PriorBoxLayer = (function() {
     if ((params != null ? params.min_size : void 0) == null) {
       throw 'PriorBox layer must have min_size';
     }
-    this.flip = getValueOrDefault(params != null ? params.flip : void 0, false);
+    this.flip = getValueOrDefault(params != null ? params.flip : void 0, 'false');
     min_size = utils.asArray(params.min_size);
     this.numMinSizes = min_size.length;
     if (params.max_size != null) {
@@ -971,6 +971,73 @@ layers.Accuracy = this.AccuracyLayer = (function() {
   };
 
   return AccuracyLayer;
+
+})();
+
+layers.ArgMax = this.ArgMaxLayer = (function() {
+  function ArgMaxLayer(attribs) {
+    this.checkParameters = bind(this.checkParameters, this);
+    this.inferShapes = bind(this.inferShapes, this);
+    var params;
+    params = attribs != null ? attribs.argmax_param : void 0;
+    this.out_max_val = getValueOrDefault(params != null ? params.out_max_val : void 0, 'false');
+    this.axis = params != null ? params.axis : void 0;
+    this.top_k = getValueOrDefault(params != null ? params.top_k : void 0, 1);
+  }
+
+  ArgMaxLayer.prototype.inferShapes = function(bottoms, tops) {
+    var i, j, ref;
+    if ((tops != null ? tops[0] : void 0) == null) {
+      return;
+    }
+    this.checkParameters(bottoms, tops);
+    this.num_top_axes = bottoms[0].shape.length < 3 ? 3 : bottoms[0].shape.length;
+    tops[0].shape = [];
+    for (i = j = 0, ref = this.num_top_axes; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+      tops[0].shape.push(1);
+    }
+    if (this.axis != null) {
+      tops[0].shape = bottoms[0].shape.slice(0);
+      return tops[0].shape[this.axis] = this.top_k;
+    } else {
+      tops[0].shape[0] = bottoms[0].shape[0];
+      tops[0].shape[2] = this.top_k;
+      if (this.out_max_val === 'true') {
+        return tops[0].shape[1] = 2;
+      }
+    }
+  };
+
+  ArgMaxLayer.prototype.checkParameters = function(bottoms, tops) {
+    var i, j, ref, size;
+    if ((bottoms != null ? bottoms.length : void 0) !== 1) {
+      throw 'ArgMax layer must have one input.';
+    }
+    if ((tops != null ? tops.length : void 0) !== 1) {
+      throw 'Outputs number of ArgMax layer must be equal to one.';
+    }
+    if (this.axis != null) {
+      if (this.axis < 0) {
+        this.axis = bottoms[0].shape.length + this.axis;
+      }
+      if (!(this.axis <= bottoms[0].shape.length)) {
+        throw "Axis " + this.axis + " of ArgMax layer invalid.";
+      }
+      if (!(this.top_k <= bottoms[0].shape[this.axis])) {
+        throw this.top_k + " is greater than " + bottoms[0].shape[this.axis] + " in ArgMax layer.";
+      }
+    } else {
+      size = 1;
+      for (i = j = 0, ref = bottoms[0].shape.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+        size *= bottoms[0].shape[i];
+      }
+      if (!(this.top_k <= size)) {
+        throw this.top_k + " is greater than " + size + " in ArgMax layer.";
+      }
+    }
+  };
+
+  return ArgMaxLayer;
 
 })();
 

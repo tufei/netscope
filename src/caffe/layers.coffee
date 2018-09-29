@@ -103,7 +103,7 @@ class @PriorBoxLayer
         params = attribs?.prior_box_param
         unless params?.min_size?
             throw 'PriorBox layer must have min_size'
-        @flip = getValueOrDefault params?.flip, false
+        @flip = getValueOrDefault params?.flip, 'false'
         min_size = utils.asArray params.min_size
         @numMinSizes = min_size.length
         if params.max_size?
@@ -270,6 +270,48 @@ class @AccuracyLayer
             throw "Accuracy layer must have two inputs."
         unless tops?.length in [1, 2]
             throw 'Outputs number of Accuracy layer must be equal to one or two.'
+
+layers.ArgMax =
+class @ArgMaxLayer
+    constructor: (attribs) ->
+        params = attribs?.argmax_param
+        @out_max_val = getValueOrDefault params?.out_max_val, 'false'
+        @axis = params?.axis
+        @top_k = getValueOrDefault params?.top_k, 1
+
+    inferShapes: (bottoms, tops) =>
+        unless tops?[0]? then return
+        @checkParameters bottoms, tops
+        @num_top_axes = if bottoms[0].shape.length < 3 then 3 else bottoms[0].shape.length
+        tops[0].shape = [ ]
+        for i in [0...@num_top_axes]
+            tops[0].shape.push(1)
+        if @axis?
+            tops[0].shape = bottoms[0].shape[..]
+            tops[0].shape[@axis] = @top_k
+        else
+            tops[0].shape[0] = bottoms[0].shape[0]
+            tops[0].shape[2] = @top_k
+            if @out_max_val == 'true'
+                tops[0].shape[1] = 2
+
+    checkParameters: (bottoms, tops) =>
+        unless bottoms?.length == 1
+            throw 'ArgMax layer must have one input.'
+        unless tops?.length == 1
+            throw 'Outputs number of ArgMax layer must be equal to one.'
+        if @axis?
+            if @axis < 0 then @axis = bottoms[0].shape.length + @axis
+            unless @axis <= bottoms[0].shape.length
+                throw "Axis #{@axis} of ArgMax layer invalid."
+            unless @top_k <= bottoms[0].shape[@axis]
+                throw "#{@top_k} is greater than #{bottoms[0].shape[@axis]} in ArgMax layer."
+        else
+            size = 1
+            for i in [0...bottoms[0].shape.length]
+                size *= bottoms[0].shape[i]
+            unless @top_k <= size
+                throw "#{@top_k} is greater than #{size} in ArgMax layer."
 
 layers.Data =
 class @DataLayer
