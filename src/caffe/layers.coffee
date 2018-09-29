@@ -173,7 +173,7 @@ class @ReshapeLayer
                     partial_size *= @shape[i]
         infer_size = total_size // partial_size
         unless infer_size * partial_size == total_size
-            throw "#{infersize} * #{partial_size} != #{total_size}"
+            throw "#{infer_size} * #{partial_size} != #{total_size}"
         index = tops[0].shape.indexOf(-1)
         tops[0].shape.splice(index, 1, infer_size)
         for i in [end_axis + 1...bottoms[0].shape.length]

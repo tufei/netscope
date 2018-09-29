@@ -783,7 +783,7 @@ layers.Reshape = this.ReshapeLayer = (function() {
     }
     infer_size = Math.floor(total_size / partial_size);
     if (infer_size * partial_size !== total_size) {
-      throw infersize + " * " + partial_size + " != " + total_size;
+      throw infer_size + " * " + partial_size + " != " + total_size;
     }
     index = tops[0].shape.indexOf(-1);
     tops[0].shape.splice(index, 1, infer_size);
