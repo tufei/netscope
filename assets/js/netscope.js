@@ -734,12 +734,12 @@ layers.Reshape = this.ReshapeLayer = (function() {
   function ReshapeLayer(attribs) {
     this.checkParameters = bind(this.checkParameters, this);
     this.inferShapes = bind(this.inferShapes, this);
-    var params;
+    var params, ref;
     params = attribs != null ? attribs.reshape_param : void 0;
-    if ((params != null ? params.shape : void 0) == null) {
-      throw 'Reshape layer requires shape parameter';
+    if ((params != null ? (ref = params.shape) != null ? ref.dim : void 0 : void 0) == null) {
+      throw 'Reshape layer requires shape dimension parameter';
     }
-    this.shape = utils.asArray(params.shape);
+    this.shape = utils.asArray(params.shape.dim);
     this.axis = getValueOrDefault(params.axis, 0);
     this.num_axes = getValueOrDefault(params.num_axes, -1);
   }

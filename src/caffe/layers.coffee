@@ -138,9 +138,9 @@ layers.Reshape =
 class @ReshapeLayer
     constructor: (attribs) ->
         params = attribs?.reshape_param
-        unless params?.shape?
-            throw 'Reshape layer requires shape parameter'
-        @shape = utils.asArray params.shape
+        unless params?.shape?.dim?
+            throw 'Reshape layer requires shape dimension parameter'
+        @shape = utils.asArray params.shape.dim
         @axis = getValueOrDefault params.axis, 0
         @num_axes = getValueOrDefault params.num_axes, -1
 

@@ -236,7 +236,8 @@ runPriorBoxTasks = (tasks) ->
 runReshapeTasks = (tasks) ->
     makeCaffeReshapeParams = (shape, axis, num_axes) ->
         params = { }
-        params.shape = shape if shape?
+        params.shape = { }
+        params.shape.dim = shape if shape?
         params.axis = axis if axis?
         params.num_axes = num_axes if num_axes?
         return { reshape_param: params }
