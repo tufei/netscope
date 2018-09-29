@@ -223,10 +223,40 @@ class @PermuteLayer
             unless i < bottoms[0].shape.length
                 throw "Axis #{i} of Permute layer larger than #{bottoms[0].shape.length}."
 
+layers.DetectionOutput =
+class @DetectionOutputLayer
+    constructor: (attribs) ->
+        params = attribs?.detection_output_param
+        unless params?.num_classes?
+            throw 'DetectionOutput layer must have num_classes.'
+        @num_classes = params.num_classes
+        @keep_top_k = getValueOrDefault params.keep_top_k, 1
+        if params.share_location? and params.share_location == 'true'
+            @num_loc_classes = 1
+        else
+            @num_loc_classes = @num_classes
+
+    inferShapes: (bottoms, tops) =>
+        unless tops?[0]? then return
+        @checkParameters bottoms, tops
+        tops[0].shape = [ ]
+        tops[0].shape.push(@keep_top_k, 7)
+
+    checkParameters: (bottoms, tops) =>
+        unless bottoms?.length == 3
+            throw 'DetectionOutput layer must have three inputs.'
+        unless tops?.length == 1
+            throw 'Outputs number of DetectionOutput layer must be equal to one.'
+        num_priors = bottoms[2].shape[2] // 4
+        unless num_priors * @num_loc_classes * 4 == bottoms[0].shape[1]
+            throw "#{num_priors} * #{@num_loc_classes} * 4 != #{bottoms[0].shape[1]}"
+        unless num_priors * @num_classes == bottoms[1].shape[1]
+            throw "#{num_priors} * #{@num_classes} != #{bottoms[1].shape[1]}"
+
 layers.Accuracy =
 class @AccuracyLayer
     constructor: (attribs) ->
-        params = attribs?.accuracy_param?
+        params = attribs?.accuracy_param
         @axis = getValueOrDefault params?.axis, 1
 
     inferShapes: (bottoms, tops) =>

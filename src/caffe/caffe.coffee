@@ -115,7 +115,7 @@ class LayersGenerator
         return layers
 
     generateRegularLayers: (phase) =>
-        phase ?= 'train'
+        phase ?= 'test'
         layers = [ ]
         headerKeys = ['name', 'type', 'top', 'bottom']
         for entry in @descriptors

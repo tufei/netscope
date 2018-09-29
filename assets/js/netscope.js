@@ -337,7 +337,7 @@ LayersGenerator = (function() {
   LayersGenerator.prototype.generateRegularLayers = function(phase) {
     var entry, headerKeys, i, layer, layerDesc, layers, len, ref;
     if (phase == null) {
-      phase = 'train';
+      phase = 'test';
     }
     layers = [];
     headerKeys = ['name', 'type', 'top', 'bottom'];
@@ -892,12 +892,60 @@ layers.Permute = this.PermuteLayer = (function() {
 
 })();
 
+layers.DetectionOutput = this.DetectionOutputLayer = (function() {
+  function DetectionOutputLayer(attribs) {
+    this.checkParameters = bind(this.checkParameters, this);
+    this.inferShapes = bind(this.inferShapes, this);
+    var params;
+    params = attribs != null ? attribs.detection_output_param : void 0;
+    if ((params != null ? params.num_classes : void 0) == null) {
+      throw 'DetectionOutput layer must have num_classes.';
+    }
+    this.num_classes = params.num_classes;
+    this.keep_top_k = getValueOrDefault(params.keep_top_k, 1);
+    if ((params.share_location != null) && params.share_location === 'true') {
+      this.num_loc_classes = 1;
+    } else {
+      this.num_loc_classes = this.num_classes;
+    }
+  }
+
+  DetectionOutputLayer.prototype.inferShapes = function(bottoms, tops) {
+    if ((tops != null ? tops[0] : void 0) == null) {
+      return;
+    }
+    this.checkParameters(bottoms, tops);
+    tops[0].shape = [];
+    return tops[0].shape.push(this.keep_top_k, 7);
+  };
+
+  DetectionOutputLayer.prototype.checkParameters = function(bottoms, tops) {
+    var num_priors;
+    if ((bottoms != null ? bottoms.length : void 0) !== 3) {
+      throw 'DetectionOutput layer must have three inputs.';
+    }
+    if ((tops != null ? tops.length : void 0) !== 1) {
+      throw 'Outputs number of DetectionOutput layer must be equal to one.';
+    }
+    num_priors = Math.floor(bottoms[2].shape[2] / 4);
+    if (num_priors * this.num_loc_classes * 4 !== bottoms[0].shape[1]) {
+      throw num_priors + " * " + this.num_loc_classes + " * 4 != " + bottoms[0].shape[1];
+    }
+    if (num_priors * this.num_classes !== bottoms[1].shape[1]) {
+      throw num_priors + " * " + this.num_classes + " != " + bottoms[1].shape[1];
+    }
+  };
+
+  return DetectionOutputLayer;
+
+})();
+
 layers.Accuracy = this.AccuracyLayer = (function() {
   function AccuracyLayer(attribs) {
     this.checkParameters = bind(this.checkParameters, this);
     this.inferShapes = bind(this.inferShapes, this);
     var params;
-    params = (attribs != null ? attribs.accuracy_param : void 0) != null;
+    params = attribs != null ? attribs.accuracy_param : void 0;
     this.axis = getValueOrDefault(params != null ? params.axis : void 0, 1);
   }
 

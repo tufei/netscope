@@ -252,6 +252,27 @@ runReshapeTasks = (tasks) ->
         return text
     runLayerTasks tasks, makeReshapeTaskName, compareReshapeOutput
 
+runDetectionOutputTasks = (tasks) ->
+    makeCaffeDetectionOutputParams = (num_classes, share_location, keep_top_k) ->
+        params = { }
+        params.num_classes = num_classes if num_classes?
+        params.share_location = share_location if share_location?
+        params.keep_top_k = keep_top_k if keep_top_k?
+        return { detection_output_param: params }
+    compareDetectionOutputOutput = (task) ->
+        compareLayerOutput layers.DetectionOutputLayer, makeCaffeDetectionOutputParams, task
+    makeDetectionOutputTaskName = (task) ->
+        [inputShapes, outputShapes, params] = task
+        text = 'from ['
+        for shape in inputShapes
+            text += " [ #{shape} ]"
+        text += " ] to [ #{outputShapes} ]"
+        text += " where num_classes = #{params[0]}" if params[0]?
+        text += " and share_location = #{params[1]}" if params[1]?
+        text += " and keep_top_k = #{params[2]}" if params[2]?
+        return text
+    runLayerTasks tasks, makeDetectionOutputTaskName, compareDetectionOutputOutput
+
 describe 'Compute 2D Convolution output shape', ->
     # [ input shape, expecting output shape ]
     # null means default parameter value
@@ -465,4 +486,11 @@ describe 'Compute Reshape output shape', ->
         [ [1, 40257], [1, 1917, 21], [ [0, -1, 21] ] ]
     ]
     runReshapeTasks tasks
+
+describe 'Compute DetectionOutput output shape', ->
+    # [ [bottom[0] shape, bottom[1] shape, bottom[2] shape], expecting output shape, [ num_classes, share_location, keep_top_k ] ]
+    tasks = [
+        [ [[1, 7668], [1, 40257], [1, 2, 7668]], [ 100, 7 ], [21, 'true', 100] ]
+    ]
+    runDetectionOutputTasks tasks
 
