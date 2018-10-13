@@ -291,6 +291,27 @@ runArgMaxTasks = (tasks) ->
         return text
     runLayerTasks tasks, makeArgMaxTaskName, compareArgMaxOutput
 
+runUpsampleTasks = (tasks) ->
+    makeCaffeUpsampleParams = (scale, pad_out_h, pad_out_w) ->
+        params = { }
+        params.scale = scale if scale?
+        params.pad_out_h = pad_out_h if pad_out_h?
+        params.pad_out_w = pad_out_w if pad_out_w?
+        return { upsample_param: params }
+    compareUpsampleOutput = (task) ->
+        compareLayerOutput layers.UpsampleLayer, makeCaffeUpsampleParams, task
+    makeUpsampleTaskName = (task) ->
+        [inputShapes, outputShapes, params] = task
+        text = 'from ['
+        for shape in inputShapes
+            text += " [ #{shape} ]"
+        text += " ] to [ #{outputShapes} ]"
+        text += " where scale = #{params[0]}" if params[0]?
+        text += " and pad_out_h = #{params[1]}" if params[1]?
+        text += " and pad_out_w = #{params[2]}" if params[2]?
+        return text
+    runLayerTasks tasks, makeUpsampleTaskName, compareUpsampleOutput
+
 describe 'Compute 2D Convolution output shape', ->
     # [ input shape, expecting output shape ]
     # null means default parameter value
@@ -519,4 +540,11 @@ describe 'Compute ArgMax output shape', ->
         [ [1, 21, 256, 512], [ 1, 5, 256, 512 ], [1, 5] ]
     ]
     runArgMaxTasks tasks
+
+describe 'Compute Upsample output shape', ->
+    # [ [bottom[0] shape, bottom[1] shape], expecting output shape, [ scale, pad_out_h, pad_out_w ] ]
+    tasks = [
+        [ [[1, 4, 5, 5], [1, 4, 5, 5]], [1, 4, 9, 10], [2, 'true', 'false'] ]
+    ]
+    runUpsampleTasks tasks
 

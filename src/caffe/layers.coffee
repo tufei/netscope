@@ -97,6 +97,53 @@ class @FlattenLayer
         unless @axis < bottoms[0].shape.length && @end_axis < bottoms[0].shape.length
             throw "Axis #{@axis} and/or End-Axis #{@end_axis} of Flatten layer larger than #{bottoms[0].shape.length}."
 
+layers.Upsample =
+class @UpsampleLayer
+    constructor: (attribs) ->
+        params = attribs?.upsample_param
+        if params?.upsample_h? && params?.upsample_w?
+            @upsample_h = params.upsample_h
+            @upsample_w = params.upsample_w
+        else
+            @pad_h = getValueOrDefault params?.pad_out_h, 'false'
+            @pad_w = getValueOrDefault params?.pad_out_w, 'false'
+            @upsample_h = -1
+            @upsample_w = -1
+            if params?.scale_h? && params?.scale_w?
+                if params?.scale?
+                    throw 'cannot define scale and scale_h/w at the same time.'
+                @scale_h = params.scale_h
+                @scale_w = params.scale_w
+            else
+                unless params?.scale?
+                    throw 'Upsample layer needs either scale or upsampled resolution.'
+                @scale_h = params.scale
+                @scale_w = params.scale
+
+    inferShapes: (bottoms, tops) =>
+        unless tops?[0]? then return
+        @checkParameters bottoms, tops
+        pad_out_h = if @pad_h == 'false' then 0 else 1
+        pad_out_w = if @pad_w == 'false' then 0 else 1
+        if (pad_out_h == 1 && @scale_h != 2) || (pad_out_w == 1 && @scale_w != 2)
+            throw 'Padding compensation requires scale ratio to be 2.'
+        if @upsample_h == -1 && @upsample_w == -1
+            @upsample_h = bottoms[0].shape[2] * @scale_h - pad_out_h
+            @upsample_w = bottoms[0].shape[3] * @scale_w - pad_out_w
+        tops[0].shape = [ ]
+        tops[0].shape.push(bottoms[0].shape[0], bottoms[0].shape[1], @upsample_h, @upsample_w)
+
+    checkParameters: (bottoms, tops) =>
+        unless bottoms?.length == 2
+            throw 'Inputs number of Upsample layer must be equal to two.'
+        unless bottoms[0]?.shape?.length == 4 && bottoms[1]?.shape?.length == 4
+            throw 'Upsample layer bottoms must have dimension of 4.'
+        unless tops?.length == 1
+            throw 'Outputs number of Upsample layer must be equal to one.'
+        for i in [0...bottoms[0].shape]
+            unless bottoms[0].shape[i] == bottoms[1].shape[i]
+                throw "Dimension #{i} of Upsample layer: #{bottoms[0].shape[i]} != #{bottoms[1]/shape[i]}."
+
 layers.PriorBox =
 class @PriorBoxLayer
     constructor: (attribs) ->
@@ -633,6 +680,7 @@ isUniformLayer = (lt) ->
     (/lrn/i.test       lt) or
     (/dropout/i.test   lt) or
     (/batchnorm/i.test lt) or
+    (/bn/i.test        lt) or
     (/mvn/i.test       lt) or
     (/softmax/i.test   lt)
 

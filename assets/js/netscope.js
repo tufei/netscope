@@ -674,6 +674,81 @@ layers.Flatten = this.FlattenLayer = (function() {
 
 })();
 
+layers.Upsample = this.UpsampleLayer = (function() {
+  function UpsampleLayer(attribs) {
+    this.checkParameters = bind(this.checkParameters, this);
+    this.inferShapes = bind(this.inferShapes, this);
+    var params;
+    params = attribs != null ? attribs.upsample_param : void 0;
+    if (((params != null ? params.upsample_h : void 0) != null) && ((params != null ? params.upsample_w : void 0) != null)) {
+      this.upsample_h = params.upsample_h;
+      this.upsample_w = params.upsample_w;
+    } else {
+      this.pad_h = getValueOrDefault(params != null ? params.pad_out_h : void 0, 'false');
+      this.pad_w = getValueOrDefault(params != null ? params.pad_out_w : void 0, 'false');
+      this.upsample_h = -1;
+      this.upsample_w = -1;
+      if (((params != null ? params.scale_h : void 0) != null) && ((params != null ? params.scale_w : void 0) != null)) {
+        if ((params != null ? params.scale : void 0) != null) {
+          throw 'cannot define scale and scale_h/w at the same time.';
+        }
+        this.scale_h = params.scale_h;
+        this.scale_w = params.scale_w;
+      } else {
+        if ((params != null ? params.scale : void 0) == null) {
+          throw 'Upsample layer needs either scale or upsampled resolution.';
+        }
+        this.scale_h = params.scale;
+        this.scale_w = params.scale;
+      }
+    }
+  }
+
+  UpsampleLayer.prototype.inferShapes = function(bottoms, tops) {
+    var pad_out_h, pad_out_w;
+    if ((tops != null ? tops[0] : void 0) == null) {
+      return;
+    }
+    this.checkParameters(bottoms, tops);
+    pad_out_h = this.pad_h === 'false' ? 0 : 1;
+    pad_out_w = this.pad_w === 'false' ? 0 : 1;
+    if ((pad_out_h === 1 && this.scale_h !== 2) || (pad_out_w === 1 && this.scale_w !== 2)) {
+      throw 'Padding compensation requires scale ratio to be 2.';
+    }
+    if (this.upsample_h === -1 && this.upsample_w === -1) {
+      this.upsample_h = bottoms[0].shape[2] * this.scale_h - pad_out_h;
+      this.upsample_w = bottoms[0].shape[3] * this.scale_w - pad_out_w;
+    }
+    tops[0].shape = [];
+    return tops[0].shape.push(bottoms[0].shape[0], bottoms[0].shape[1], this.upsample_h, this.upsample_w);
+  };
+
+  UpsampleLayer.prototype.checkParameters = function(bottoms, tops) {
+    var i, j, ref, ref1, ref2, ref3, ref4, results;
+    if ((bottoms != null ? bottoms.length : void 0) !== 2) {
+      throw 'Inputs number of Upsample layer must be equal to two.';
+    }
+    if (!(((ref = bottoms[0]) != null ? (ref1 = ref.shape) != null ? ref1.length : void 0 : void 0) === 4 && ((ref2 = bottoms[1]) != null ? (ref3 = ref2.shape) != null ? ref3.length : void 0 : void 0) === 4)) {
+      throw 'Upsample layer bottoms must have dimension of 4.';
+    }
+    if ((tops != null ? tops.length : void 0) !== 1) {
+      throw 'Outputs number of Upsample layer must be equal to one.';
+    }
+    results = [];
+    for (i = j = 0, ref4 = bottoms[0].shape; 0 <= ref4 ? j < ref4 : j > ref4; i = 0 <= ref4 ? ++j : --j) {
+      if (bottoms[0].shape[i] !== bottoms[1].shape[i]) {
+        throw "Dimension " + i + " of Upsample layer: " + bottoms[0].shape[i] + " != " + (bottoms[1] / shape[i]) + ".";
+      } else {
+        results.push(void 0);
+      }
+    }
+    return results;
+  };
+
+  return UpsampleLayer;
+
+})();
+
 layers.PriorBox = this.PriorBoxLayer = (function() {
   function PriorBoxLayer(attribs) {
     this.checkParameters = bind(this.checkParameters, this);
@@ -1550,7 +1625,7 @@ isDataLayer = function(layerType) {
 };
 
 isUniformLayer = function(lt) {
-  return (/relu/i.test(lt)) || (/prelu/i.test(lt)) || (/elu/i.test(lt)) || (/sigmoid/i.test(lt)) || (/tanh/i.test(lt)) || (/abs/i.test(lt)) || (/power/i.test(lt)) || (/exp/i.test(lt)) || (/log/i.test(lt)) || (/bnll/i.test(lt)) || (/threshold/i.test(lt)) || (/bias/i.test(lt)) || (/scale/i.test(lt)) || (/lrn/i.test(lt)) || (/dropout/i.test(lt)) || (/batchnorm/i.test(lt)) || (/mvn/i.test(lt)) || (/softmax/i.test(lt));
+  return (/relu/i.test(lt)) || (/prelu/i.test(lt)) || (/elu/i.test(lt)) || (/sigmoid/i.test(lt)) || (/tanh/i.test(lt)) || (/abs/i.test(lt)) || (/power/i.test(lt)) || (/exp/i.test(lt)) || (/log/i.test(lt)) || (/bnll/i.test(lt)) || (/threshold/i.test(lt)) || (/bias/i.test(lt)) || (/scale/i.test(lt)) || (/lrn/i.test(lt)) || (/dropout/i.test(lt)) || (/batchnorm/i.test(lt)) || (/bn/i.test(lt)) || (/mvn/i.test(lt)) || (/softmax/i.test(lt));
 };
 
 getLayerType = function(layerTypeName) {
