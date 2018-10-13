@@ -101,12 +101,15 @@ layers.Upsample =
 class @UpsampleLayer
     constructor: (attribs) ->
         params = attribs?.upsample_param
+        @pad_h = getValueOrDefault params?.pad_out_h, 'false'
+        @pad_w = getValueOrDefault params?.pad_out_w, 'false'
         if params?.upsample_h? && params?.upsample_w?
             @upsample_h = params.upsample_h
             @upsample_w = params.upsample_w
+            if params?.scale?
+                @scale_h = params.scale
+                @scale_w = params.scale
         else
-            @pad_h = getValueOrDefault params?.pad_out_h, 'false'
-            @pad_w = getValueOrDefault params?.pad_out_w, 'false'
             @upsample_h = -1
             @upsample_w = -1
             if params?.scale_h? && params?.scale_w?

@@ -680,12 +680,16 @@ layers.Upsample = this.UpsampleLayer = (function() {
     this.inferShapes = bind(this.inferShapes, this);
     var params;
     params = attribs != null ? attribs.upsample_param : void 0;
+    this.pad_h = getValueOrDefault(params != null ? params.pad_out_h : void 0, 'false');
+    this.pad_w = getValueOrDefault(params != null ? params.pad_out_w : void 0, 'false');
     if (((params != null ? params.upsample_h : void 0) != null) && ((params != null ? params.upsample_w : void 0) != null)) {
       this.upsample_h = params.upsample_h;
       this.upsample_w = params.upsample_w;
+      if ((params != null ? params.scale : void 0) != null) {
+        this.scale_h = params.scale;
+        this.scale_w = params.scale;
+      }
     } else {
-      this.pad_h = getValueOrDefault(params != null ? params.pad_out_h : void 0, 'false');
-      this.pad_w = getValueOrDefault(params != null ? params.pad_out_w : void 0, 'false');
       this.upsample_h = -1;
       this.upsample_w = -1;
       if (((params != null ? params.scale_h : void 0) != null) && ((params != null ? params.scale_w : void 0) != null)) {
