@@ -67,6 +67,29 @@ class @LossLayer
         # Loss layer always returns scalar
         tops[0].shape = [ 1 ]
 
+layers.ROIAlign =
+class @ROIAlignLayer
+    constructor: (attribs) ->
+        params = attribs?.roi_align_param
+        unless params?.pooled_h? && params?.pooled_w?
+            throw 'ROIAlign layer requires pooled_h/w parameter.'
+        @pooled_h = params.pooled_h
+        @pooled_w = params.pooled_w
+
+    inferShapes: (bottoms, tops) =>
+        unless tops?[0]? then return
+        @checkParameters bottoms, tops
+        tops[0].shape = [ ]
+        tops[0].shape.push(bottoms[1].shape[0], bottoms[0].shape[1], @pooled_h, @pooled_w)
+
+    checkParameters: (bottoms, tops) =>
+        unless bottoms?.length == 2
+            throw "ROIAlign layer must have two inputs."
+        unless tops?.length == 1
+            throw 'Outputs number of Flatten layer must be equal to one.'
+        unless @pooled_h > 0 && @pooled_w > 0
+            throw "Pooled height #{@pooled_h} and/or width #{@pooled_w} of ROIAlign layer invalid."
+
 layers.Flatten =
 class @FlattenLayer
     constructor: (attribs) ->
@@ -373,16 +396,23 @@ class @DataLayer
     inferShapes: (bottoms, tops) =>
         unless tops?[0]? then return
         @checkParameters bottoms, tops
-        tops[0].shape = @outputShape[..]
-        tops[1].shape = @outputShape[..0] if tops[1]
+        if tops.length <= 2
+            tops[0].shape = @outputShape[..]
+            tops[1].shape = @outputShape[..0] if tops[1]
+        else
+            for i in [0...tops.length]
+                tops[i].shape = @outputShape[4 * i...4 * (i + 1)]
 
     checkParameters: (bottoms, tops) =>
         unless @outputShape?
             throw "Can't extract data shape from Data layer"
         if bottoms?.length > 0
             throw "Data layer doesn't expect any input."
-        unless tops?.length in [1, 2]
-            throw 'Outputs number of Data layer must be equal to one or two.'
+        unless tops?.length <= 6
+            throw 'Outputs number of Data layer must be no greater than six.'
+            if tops?.length > 2
+                unless tops?.length * 4 == @outputShape.length
+                    throw 'Shapes of Data layer outputs not fully defined.'
 
     tryExtractShapes: (attribs) =>
         shape = attribs?.input_param?.shape?.dim

@@ -620,6 +620,44 @@ layers.Loss = this.LossLayer = (function() {
 
 })();
 
+layers.ROIAlign = this.ROIAlignLayer = (function() {
+  function ROIAlignLayer(attribs) {
+    this.checkParameters = bind(this.checkParameters, this);
+    this.inferShapes = bind(this.inferShapes, this);
+    var params;
+    params = attribs != null ? attribs.roi_align_param : void 0;
+    if (!(((params != null ? params.pooled_h : void 0) != null) && ((params != null ? params.pooled_w : void 0) != null))) {
+      throw 'ROIAlign layer requires pooled_h/w parameter.';
+    }
+    this.pooled_h = params.pooled_h;
+    this.pooled_w = params.pooled_w;
+  }
+
+  ROIAlignLayer.prototype.inferShapes = function(bottoms, tops) {
+    if ((tops != null ? tops[0] : void 0) == null) {
+      return;
+    }
+    this.checkParameters(bottoms, tops);
+    tops[0].shape = [];
+    return tops[0].shape.push(bottoms[1].shape[0], bottoms[0].shape[1], this.pooled_h, this.pooled_w);
+  };
+
+  ROIAlignLayer.prototype.checkParameters = function(bottoms, tops) {
+    if ((bottoms != null ? bottoms.length : void 0) !== 2) {
+      throw "ROIAlign layer must have two inputs.";
+    }
+    if ((tops != null ? tops.length : void 0) !== 1) {
+      throw 'Outputs number of Flatten layer must be equal to one.';
+    }
+    if (!(this.pooled_h > 0 && this.pooled_w > 0)) {
+      throw "Pooled height " + this.pooled_h + " and/or width " + this.pooled_w + " of ROIAlign layer invalid.";
+    }
+  };
+
+  return ROIAlignLayer;
+
+})();
+
 layers.Flatten = this.FlattenLayer = (function() {
   function FlattenLayer(attribs) {
     this.checkParameters = bind(this.checkParameters, this);
@@ -1133,26 +1171,39 @@ layers.Data = this.DataLayer = (function() {
   }
 
   DataLayer.prototype.inferShapes = function(bottoms, tops) {
+    var i, j, ref, results;
     if ((tops != null ? tops[0] : void 0) == null) {
       return;
     }
     this.checkParameters(bottoms, tops);
-    tops[0].shape = this.outputShape.slice(0);
-    if (tops[1]) {
-      return tops[1].shape = this.outputShape.slice(0, 1);
+    if (tops.length <= 2) {
+      tops[0].shape = this.outputShape.slice(0);
+      if (tops[1]) {
+        return tops[1].shape = this.outputShape.slice(0, 1);
+      }
+    } else {
+      results = [];
+      for (i = j = 0, ref = tops.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+        results.push(tops[i].shape = this.outputShape.slice(4 * i, 4 * (i + 1)));
+      }
+      return results;
     }
   };
 
   DataLayer.prototype.checkParameters = function(bottoms, tops) {
-    var ref;
     if (this.outputShape == null) {
       throw "Can't extract data shape from Data layer";
     }
     if ((bottoms != null ? bottoms.length : void 0) > 0) {
       throw "Data layer doesn't expect any input.";
     }
-    if ((ref = tops != null ? tops.length : void 0) !== 1 && ref !== 2) {
-      throw 'Outputs number of Data layer must be equal to one or two.';
+    if (!((tops != null ? tops.length : void 0) <= 6)) {
+      throw 'Outputs number of Data layer must be no greater than six.';
+      if ((tops != null ? tops.length : void 0) > 2) {
+        if ((tops != null ? tops.length : void 0) * 4 !== this.outputShape.length) {
+          throw 'Shapes of Data layer outputs not fully defined.';
+        }
+      }
     }
   };
 
@@ -1629,7 +1680,7 @@ isDataLayer = function(layerType) {
 };
 
 isUniformLayer = function(lt) {
-  return (/relu/i.test(lt)) || (/prelu/i.test(lt)) || (/elu/i.test(lt)) || (/sigmoid/i.test(lt)) || (/tanh/i.test(lt)) || (/abs/i.test(lt)) || (/power/i.test(lt)) || (/exp/i.test(lt)) || (/log/i.test(lt)) || (/bnll/i.test(lt)) || (/threshold/i.test(lt)) || (/bias/i.test(lt)) || (/scale/i.test(lt)) || (/lrn/i.test(lt)) || (/dropout/i.test(lt)) || (/batchnorm/i.test(lt)) || (/bn/i.test(lt)) || (/mvn/i.test(lt)) || (/softmax/i.test(lt));
+  return (/relu/i.test(lt)) || (/relu6/i.test(lt)) || (/prelu/i.test(lt)) || (/elu/i.test(lt)) || (/sigmoid/i.test(lt)) || (/tanh/i.test(lt)) || (/abs/i.test(lt)) || (/power/i.test(lt)) || (/exp/i.test(lt)) || (/log/i.test(lt)) || (/bnll/i.test(lt)) || (/threshold/i.test(lt)) || (/bias/i.test(lt)) || (/scale/i.test(lt)) || (/lrn/i.test(lt)) || (/dropout/i.test(lt)) || (/batchnorm/i.test(lt)) || (/bn/i.test(lt)) || (/mvn/i.test(lt)) || (/softmax/i.test(lt));
 };
 
 getLayerType = function(layerTypeName) {
