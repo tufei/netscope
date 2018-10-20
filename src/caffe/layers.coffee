@@ -668,6 +668,7 @@ isDataLayer = (layerType) ->
 
 isUniformLayer = (lt) ->
     (/relu/i.test      lt) or
+    (/relu6/i.test     lt) or
     (/prelu/i.test     lt) or
     (/elu/i.test       lt) or
     (/sigmoid/i.test   lt) or
