@@ -1057,6 +1057,44 @@ layers.DetectionOutput = this.DetectionOutputLayer = (function() {
 
 })();
 
+layers.Embed = this.EmbedLayer = (function() {
+  function EmbedLayer(attribs) {
+    this.checkParameters = bind(this.checkParameters, this);
+    this.inferShapes = bind(this.inferShapes, this);
+    var params;
+    params = attribs != null ? attribs.embed_param : void 0;
+    if ((params != null ? params.num_output : void 0) == null) {
+      throw 'Embed layer must have num_output.';
+    }
+    this.num_output = params != null ? params.num_output : void 0;
+    this.input_dim = params != null ? params.input_dim : void 0;
+  }
+
+  EmbedLayer.prototype.inferShapes = function(bottoms, tops) {
+    if ((tops != null ? tops[0] : void 0) == null) {
+      return;
+    }
+    this.checkParameters(bottoms, tops);
+    tops[0].shape = bottoms[0].shape;
+    return tops[0].shape.push(this.num_output);
+  };
+
+  EmbedLayer.prototype.checkParameters = function(bottoms, tops) {
+    if ((bottoms != null ? bottoms.length : void 0) !== 1) {
+      throw 'Embed layer must have one input.';
+    }
+    if ((tops != null ? tops.length : void 0) !== 1) {
+      throw 'Outputs number of Embed layer must be equal to one.';
+    }
+    if (!(this.num_output > 0 && this.input_dim > 0)) {
+      throw this.num_output + " and/or " + this.input_dim + " of Embed layer invalid.";
+    }
+  };
+
+  return EmbedLayer;
+
+})();
+
 layers.Accuracy = this.AccuracyLayer = (function() {
   function AccuracyLayer(attribs) {
     this.checkParameters = bind(this.checkParameters, this);
@@ -1171,7 +1209,7 @@ layers.Data = this.DataLayer = (function() {
   }
 
   DataLayer.prototype.inferShapes = function(bottoms, tops) {
-    var i, j, ref, results;
+    var i, j, k, ref, ref1, results, results1;
     if ((tops != null ? tops[0] : void 0) == null) {
       return;
     }
@@ -1182,11 +1220,19 @@ layers.Data = this.DataLayer = (function() {
         return tops[1].shape = this.outputShape.slice(0, 1);
       }
     } else {
-      results = [];
-      for (i = j = 0, ref = tops.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
-        results.push(tops[i].shape = this.outputShape.slice(4 * i, 4 * (i + 1)));
+      if (tops.length === this.outputShape.length) {
+        results = [];
+        for (i = j = 0, ref = tops.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+          results.push(tops[i].shape = this.outputShape[i].dim);
+        }
+        return results;
+      } else {
+        results1 = [];
+        for (i = k = 0, ref1 = tops.length; 0 <= ref1 ? k < ref1 : k > ref1; i = 0 <= ref1 ? ++k : --k) {
+          results1.push(tops[i].shape = this.outputShape.slice(4 * i, 4 * (i + 1)));
+        }
+        return results1;
       }
-      return results;
     }
   };
 
@@ -1199,10 +1245,10 @@ layers.Data = this.DataLayer = (function() {
     }
     if (!((tops != null ? tops.length : void 0) <= 6)) {
       throw 'Outputs number of Data layer must be no greater than six.';
-      if ((tops != null ? tops.length : void 0) > 2) {
-        if ((tops != null ? tops.length : void 0) * 4 !== this.outputShape.length) {
-          throw 'Shapes of Data layer outputs not fully defined.';
-        }
+    }
+    if ((tops != null ? tops.length : void 0) > 2) {
+      if (!((tops != null ? tops.length : void 0) * 4 === this.outputShape.length || ((tops != null ? tops.length : void 0) === this.outputShape.length && (this.outputShape[0].dim != null)))) {
+        throw 'Shapes of Data layer outputs not fully defined.';
       }
     }
   };

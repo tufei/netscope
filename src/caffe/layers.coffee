@@ -326,6 +326,29 @@ class @DetectionOutputLayer
         unless num_priors * @num_classes == bottoms[1].shape[1]
             throw "#{num_priors} * #{@num_classes} != #{bottoms[1].shape[1]}"
 
+layers.Embed =
+class @EmbedLayer
+    constructor: (attribs) ->
+        params = attribs?.embed_param
+        unless params?.num_output?
+            throw 'Embed layer must have num_output.'
+        @num_output = params?.num_output
+        @input_dim = params?.input_dim
+
+    inferShapes: (bottoms, tops) =>
+        unless tops?[0]? then return
+        @checkParameters bottoms, tops
+        tops[0].shape = bottoms[0].shape
+        tops[0].shape.push(@num_output)
+
+    checkParameters: (bottoms, tops) =>
+        unless bottoms?.length == 1
+            throw 'Embed layer must have one input.'
+        unless tops?.length == 1
+            throw 'Outputs number of Embed layer must be equal to one.'
+        unless @num_output > 0 && @input_dim > 0
+            throw "#{@num_output} and/or #{@input_dim} of Embed layer invalid."
+
 layers.Accuracy =
 class @AccuracyLayer
     constructor: (attribs) ->
@@ -400,8 +423,12 @@ class @DataLayer
             tops[0].shape = @outputShape[..]
             tops[1].shape = @outputShape[..0] if tops[1]
         else
-            for i in [0...tops.length]
-                tops[i].shape = @outputShape[4 * i...4 * (i + 1)]
+            if tops.length == @outputShape.length
+                for i in [0...tops.length]
+                    tops[i].shape = @outputShape[i].dim
+            else
+                for i in [0...tops.length]
+                    tops[i].shape = @outputShape[4 * i...4 * (i + 1)]
 
     checkParameters: (bottoms, tops) =>
         unless @outputShape?
@@ -410,9 +437,9 @@ class @DataLayer
             throw "Data layer doesn't expect any input."
         unless tops?.length <= 6
             throw 'Outputs number of Data layer must be no greater than six.'
-            if tops?.length > 2
-                unless tops?.length * 4 == @outputShape.length
-                    throw 'Shapes of Data layer outputs not fully defined.'
+        if tops?.length > 2
+            unless tops?.length * 4 == @outputShape.length || (tops?.length == @outputShape.length && @outputShape[0].dim?)
+                throw 'Shapes of Data layer outputs not fully defined.'
 
     tryExtractShapes: (attribs) =>
         shape = attribs?.input_param?.shape?.dim
