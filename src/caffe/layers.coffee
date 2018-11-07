@@ -743,6 +743,7 @@ isUniformLayer = (lt) ->
     (/batchnorm/i.test lt) or
     (/bn/i.test        lt) or
     (/mvn/i.test       lt) or
+    (/quantize/i.test  lt) or
     (/softmax/i.test   lt)
 
 getLayerType = (layerTypeName) ->
