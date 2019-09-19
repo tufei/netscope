@@ -3,3 +3,6 @@
 
 # Node.js files
 node_modules
+
+# MS VS Code files
+.vscode
