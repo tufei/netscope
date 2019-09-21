@@ -712,6 +712,83 @@ layers.Flatten = this.FlattenLayer = (function() {
 
 })();
 
+layers.Interp = this.InterpLayer = (function() {
+  function InterpLayer(attribs) {
+    this.checkParameters = bind(this.checkParameters, this);
+    this.inferShapes = bind(this.inferShapes, this);
+    var params;
+    params = attribs != null ? attribs.interp_param : void 0;
+    this.pad_begin = getValueOrDefault(params != null ? params.pad_begin : void 0, 0);
+    this.pad_end = getValueOrDefault(params != null ? params.pad_end : void 0, 0);
+    if (((params != null ? params.shrink_factor : void 0) != null) || (params.zoom_factor != null)) {
+      if (((params != null ? params.height : void 0) != null) || ((params != null ? params.width : void 0) != null)) {
+        throw 'cannot define zoom/shrink factor and width/height at the same time.';
+      }
+      if ((params != null ? params.shrink_factor : void 0) != null) {
+        this.shrink_factor = params.shrink_factor;
+      } else {
+        this.shrink_factor = 0;
+      }
+      if ((params != null ? params.zoom_factor : void 0) != null) {
+        this.zoom_factor = params.zoom_factor;
+      } else {
+        this.zoom_factor = 0;
+      }
+    } else {
+      if (((params != null ? params.height : void 0) != null) && ((params != null ? params.width : void 0) != null)) {
+        this.interp_w = params.width;
+        this.interp_h = params.height;
+        this.zoom_factor = 0;
+        this.shrink_factor = 0;
+      } else {
+        throw 'has to define width and height at the same time.';
+      }
+    }
+  }
+
+  InterpLayer.prototype.inferShapes = function(bottoms, tops) {
+    if ((tops != null ? tops[0] : void 0) == null) {
+      return;
+    }
+    this.checkParameters(bottoms, tops);
+    if (this.zoom_factor !== 0 || this.shrink_factor !== 0) {
+      this.interp_h = bottoms[0].shape[2] + this.pad_begin + this.pad_end;
+      this.interp_w = bottoms[0].shape[3] + this.pad_begin + this.pad_end;
+      if (this.shrink_factor !== 0) {
+        this.interp_h = (this.interp_h - 1) / this.shrink_factor + 1;
+        this.interp_w = (this.interp_w - 1) / this.shrink_factor + 1;
+      }
+      if (this.zoom_factor !== 0) {
+        this.interp_h = this.interp_h + (this.interp_h - 1) * (this.zoom_factor - 1);
+        this.interp_w = this.interp_w + (this.interp_w - 1) * (this.zoom_factor - 1);
+      }
+    }
+    tops[0].shape = [];
+    return tops[0].shape.push(bottoms[0].shape[0], bottoms[0].shape[1], this.interp_h, this.interp_w);
+  };
+
+  InterpLayer.prototype.checkParameters = function(bottoms, tops) {
+    if ((bottoms != null ? bottoms.length : void 0) !== 1) {
+      throw "Interp layer must have one input.";
+    }
+    if ((tops != null ? tops.length : void 0) !== 1) {
+      throw 'Outputs number of Interp layer must be equal to one.';
+    }
+    if (!(this.pad_begin <= 0 && this.pad_end <= 0)) {
+      throw "pad_begin " + this.pad_begin + " and pad_end " + this.pad_end + " has to be non-positive for now.";
+    }
+    if (!(this.zoom_factor === 0 || this.zoom_factor >= 1)) {
+      throw "zoom_factor " + this.zoom_factor + " must be not less than 1.";
+    }
+    if (!(this.shrink_factor === 0 || this.shrink_factor >= 1)) {
+      throw "shrink_factor " + this.shrink_factor + " must be not less than 1.";
+    }
+  };
+
+  return InterpLayer;
+
+})();
+
 layers.Upsample = this.UpsampleLayer = (function() {
   function UpsampleLayer(attribs) {
     this.checkParameters = bind(this.checkParameters, this);

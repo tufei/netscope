@@ -120,6 +120,60 @@ class @FlattenLayer
         unless @axis < bottoms[0].shape.length && @end_axis < bottoms[0].shape.length
             throw "Axis #{@axis} and/or End-Axis #{@end_axis} of Flatten layer larger than #{bottoms[0].shape.length}."
 
+layers.Interp =
+class @InterpLayer
+    constructor: (attribs) ->
+        params = attribs?.interp_param
+        @pad_begin = getValueOrDefault params?.pad_begin, 0
+        @pad_end = getValueOrDefault params?.pad_end, 0
+        if params?.shrink_factor? || params.zoom_factor?
+            if params?.height? || params?.width?
+                throw 'cannot define zoom/shrink factor and width/height at the same time.'
+            if params?.shrink_factor?
+                @shrink_factor = params.shrink_factor
+            else
+                @shrink_factor = 0
+
+            if params?.zoom_factor?
+                @zoom_factor = params.zoom_factor
+            else
+                @zoom_factor = 0
+        else
+            if params?.height? && params?.width?
+                @interp_w = params.width
+                @interp_h = params.height
+                @zoom_factor = 0
+                @shrink_factor = 0
+            else
+                throw 'has to define width and height at the same time.'
+
+    inferShapes: (bottoms, tops) =>
+        unless tops?[0]? then return
+        @checkParameters bottoms, tops
+        if @zoom_factor != 0 || @shrink_factor != 0
+            @interp_h = bottoms[0].shape[2] + @pad_begin + @pad_end
+            @interp_w = bottoms[0].shape[3] + @pad_begin + @pad_end
+            if @shrink_factor != 0
+              @interp_h = (@interp_h - 1) / @shrink_factor + 1 
+              @interp_w = (@interp_w - 1) / @shrink_factor + 1 
+            if @zoom_factor !=  0
+              @interp_h = @interp_h + (@interp_h - 1) * (@zoom_factor - 1) 
+              @interp_w = @interp_w + (@interp_w - 1) * (@zoom_factor - 1) 
+        tops[0].shape = [ ]
+        tops[0].shape.push(bottoms[0].shape[0], bottoms[0].shape[1], @interp_h, @interp_w)
+
+    checkParameters: (bottoms, tops) =>
+        unless bottoms?.length == 1
+            throw "Interp layer must have one input."
+        unless tops?.length == 1
+            throw 'Outputs number of Interp layer must be equal to one.'
+        unless @pad_begin <= 0 && @pad_end <= 0
+            throw "pad_begin #{@pad_begin} and pad_end #{@pad_end} has to be non-positive for now."
+        unless @zoom_factor == 0 || @zoom_factor >= 1
+            throw "zoom_factor #{@zoom_factor} must be not less than 1."
+        unless @shrink_factor == 0 || @shrink_factor >= 1
+            throw "shrink_factor #{@shrink_factor} must be not less than 1."
+
 layers.Upsample =
 class @UpsampleLayer
     constructor: (attribs) ->

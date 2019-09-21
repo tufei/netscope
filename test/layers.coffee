@@ -312,6 +312,22 @@ runUpsampleTasks = (tasks) ->
         return text
     runLayerTasks tasks, makeUpsampleTaskName, compareUpsampleOutput
 
+runInterpTasks = (tasks) ->
+    makeCaffeInterpParams = (height, width) ->
+        params = { }
+        params.height = height if height?
+        params.width = width if width?
+        return { interp_param: params }
+    compareInterpOutput = (task) ->
+        compareLayerOutput layers.InterpLayer, makeCaffeInterpParams, task
+    makeInterpTaskName = (task) ->
+        params = task[2]
+        text = "from [ #{task[0]} ] to [ #{task[1]} ]"
+        text += " where height = #{params[0]}" if params[0]?
+        text += " and width = #{params[1]}" if params[1]?
+        return text
+    runLayerTasks tasks, makeInterpTaskName, compareInterpOutput
+
 describe 'Compute 2D Convolution output shape', ->
     # [ input shape, expecting output shape ]
     # null means default parameter value
@@ -548,3 +564,9 @@ describe 'Compute Upsample output shape', ->
     ]
     runUpsampleTasks tasks
 
+describe 'Compute Interp output shape', ->
+    # [ bottom[0] shape, expecting output shape, [ height, width ] ]
+    tasks = [
+        [ [1, 4, 5, 5], [1, 4, 15, 25], [15, 25] ]
+    ]
+    runInterpTasks tasks
