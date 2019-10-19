@@ -90,6 +90,60 @@ class @ROIAlignLayer
         unless @pooled_h > 0 && @pooled_w > 0
             throw "Pooled height #{@pooled_h} and/or width #{@pooled_w} of ROIAlign layer invalid."
 
+layers.Slice =
+class @SliceLayer
+    constructor: (attribs) ->
+        params = attribs?.slice_param
+        @axis = getValueOrDefault params?.axis, 1
+        @slice_dim = getValueOrDefault params?.slice_dim, -1
+        @slice_point = params?.slice_point
+
+    inferShapes: (bottoms, tops) =>
+        unless tops?[0]? then return
+        @checkParameters bottoms, tops
+        for i in [0...tops.length]
+            tops[i].shape = [ ]
+            for j in [0...bottoms[0].shape.length]
+                tops[i].shape.push(bottoms[0].shape[j])
+        if @slice_point?
+            prev = 0
+            for i in [0...@slice_point]
+                tops[i].shape[@axis] = slice_point[i] - prev
+                prev = slice_point[i]
+            tops[tops.length - 1].shape[@axis] = bottoms[0].shape[@axis] - prev
+        else
+            for i in [0...tops.length]
+                tops[i].shape[@axis] = bottoms[0].shape[@axis] // tops.length
+
+
+    checkParameters: (bottoms, tops) =>
+        unless bottoms?.length == 1
+            throw 'Slice layer must have one input.'
+        unless tops?.length > 1
+            throw 'Outputs number of Slice layer must be greater than one.'
+        if @slice_dim != -1 && @axis != 1
+            throw 'Slice dimension and axis cannot be specified at the same time.'
+        else
+            if @slice_dim != -1
+                unless @slice_dim >= 0
+                    throw "Slice dimension #{@slice_dim} must be non-negative."
+                @axis = @slice_dim
+        unless @axis < bottoms[0].shape.length
+            throw "Axis #{@axis} of Slice layer greater than #{@bottms[0].shape.length}."
+        if @slice_point?
+            unless @slice_point.length == tops?.length - 1
+                throw "Number of slice points #{@slice_point.length} invalid."
+            prev = 0
+            for i in [0...@slice_point.length]
+                unless @slice_point[i] > prev
+                    throw "Invalid slice point #{@slice_point[i]}."
+                prev = @slice_point[i]
+        else
+            @axis = bottoms[0].shape.length + @axis if @axis < 0
+            unless bottoms[0].shape[@axis] % tops.length == 0
+                throw "Number of outputs #{tops.length} cannot divide dimension."
+
+
 layers.Flatten =
 class @FlattenLayer
     constructor: (attribs) ->

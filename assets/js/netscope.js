@@ -512,11 +512,11 @@ var ConvolutionLayerBase, areShapesEqual, extractKernelSizes, extractPaddingSize
 utils = require('../utils/utils.coffee');
 
 areShapesEqual = function(x, y) {
-  var i, j, ref;
+  var i, k, ref;
   if (x.length !== y.length) {
     return false;
   }
-  for (i = j = 0, ref = x.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+  for (i = k = 0, ref = x.length; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
     if (x[i] !== y[i]) {
       return false;
     }
@@ -565,9 +565,9 @@ getParameterAsArray = function(parameter, requiredLength, name) {
     return parameter;
   }
   return (function() {
-    var j, ref, results;
+    var k, ref, results;
     results = [];
-    for (i = j = 0, ref = requiredLength; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+    for (i = k = 0, ref = requiredLength; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
       results.push(parameter);
     }
     return results;
@@ -575,10 +575,10 @@ getParameterAsArray = function(parameter, requiredLength, name) {
 };
 
 shapesToString = function(inputShapes) {
-  var j, len, shape, text;
+  var k, len, shape, text;
   text = '[';
-  for (j = 0, len = inputShapes.length; j < len; j++) {
-    shape = inputShapes[j];
+  for (k = 0, len = inputShapes.length; k < len; k++) {
+    shape = inputShapes[k];
     text += " [ " + shape + " ]";
   }
   text += ' ]';
@@ -591,12 +591,12 @@ layers.Uniform = this.UniformLayer = (function() {
   function UniformLayer() {}
 
   UniformLayer.prototype.inferShapes = function(bottoms, tops) {
-    var i, j, ref, results;
+    var i, k, ref, results;
     if ((tops != null ? tops[0] : void 0) == null) {
       return;
     }
     results = [];
-    for (i = j = 0, ref = tops.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+    for (i = k = 0, ref = tops.length; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
       results.push(tops[i].shape = bottoms[i].shape.slice(0));
     }
     return results;
@@ -658,6 +658,93 @@ layers.ROIAlign = this.ROIAlignLayer = (function() {
 
 })();
 
+layers.Slice = this.SliceLayer = (function() {
+  function SliceLayer(attribs) {
+    this.checkParameters = bind(this.checkParameters, this);
+    this.inferShapes = bind(this.inferShapes, this);
+    var params;
+    params = attribs != null ? attribs.slice_param : void 0;
+    this.axis = getValueOrDefault(params != null ? params.axis : void 0, 1);
+    this.slice_dim = getValueOrDefault(params != null ? params.slice_dim : void 0, -1);
+    this.slice_point = params != null ? params.slice_point : void 0;
+  }
+
+  SliceLayer.prototype.inferShapes = function(bottoms, tops) {
+    var i, j, k, l, m, n, prev, ref, ref1, ref2, ref3, results;
+    if ((tops != null ? tops[0] : void 0) == null) {
+      return;
+    }
+    this.checkParameters(bottoms, tops);
+    for (i = k = 0, ref = tops.length; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
+      tops[i].shape = [];
+      for (j = l = 0, ref1 = bottoms[0].shape.length; 0 <= ref1 ? l < ref1 : l > ref1; j = 0 <= ref1 ? ++l : --l) {
+        tops[i].shape.push(bottoms[0].shape[j]);
+      }
+    }
+    if (this.slice_point != null) {
+      prev = 0;
+      for (i = m = 0, ref2 = this.slice_point; 0 <= ref2 ? m < ref2 : m > ref2; i = 0 <= ref2 ? ++m : --m) {
+        tops[i].shape[this.axis] = slice_point[i] - prev;
+        prev = slice_point[i];
+      }
+      return tops[tops.length - 1].shape[this.axis] = bottoms[0].shape[this.axis] - prev;
+    } else {
+      results = [];
+      for (i = n = 0, ref3 = tops.length; 0 <= ref3 ? n < ref3 : n > ref3; i = 0 <= ref3 ? ++n : --n) {
+        results.push(tops[i].shape[this.axis] = Math.floor(bottoms[0].shape[this.axis] / tops.length));
+      }
+      return results;
+    }
+  };
+
+  SliceLayer.prototype.checkParameters = function(bottoms, tops) {
+    var i, k, prev, ref, results;
+    if ((bottoms != null ? bottoms.length : void 0) !== 1) {
+      throw 'Slice layer must have one input.';
+    }
+    if (!((tops != null ? tops.length : void 0) > 1)) {
+      throw 'Outputs number of Slice layer must be greater than one.';
+    }
+    if (this.slice_dim !== -1 && this.axis !== 1) {
+      throw 'Slice dimension and axis cannot be specified at the same time.';
+    } else {
+      if (this.slice_dim !== -1) {
+        if (!(this.slice_dim >= 0)) {
+          throw "Slice dimension " + this.slice_dim + " must be non-negative.";
+        }
+        this.axis = this.slice_dim;
+      }
+    }
+    if (!(this.axis < bottoms[0].shape.length)) {
+      throw "Axis " + this.axis + " of Slice layer greater than " + this.bottms[0].shape.length + ".";
+    }
+    if (this.slice_point != null) {
+      if (this.slice_point.length !== (tops != null ? tops.length : void 0) - 1) {
+        throw "Number of slice points " + this.slice_point.length + " invalid.";
+      }
+      prev = 0;
+      results = [];
+      for (i = k = 0, ref = this.slice_point.length; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
+        if (!(this.slice_point[i] > prev)) {
+          throw "Invalid slice point " + this.slice_point[i] + ".";
+        }
+        results.push(prev = this.slice_point[i]);
+      }
+      return results;
+    } else {
+      if (this.axis < 0) {
+        this.axis = bottoms[0].shape.length + this.axis;
+      }
+      if (bottoms[0].shape[this.axis] % tops.length !== 0) {
+        throw "Number of outputs " + tops.length + " cannot divide dimension.";
+      }
+    }
+  };
+
+  return SliceLayer;
+
+})();
+
 layers.Flatten = this.FlattenLayer = (function() {
   function FlattenLayer(attribs) {
     this.checkParameters = bind(this.checkParameters, this);
@@ -669,7 +756,7 @@ layers.Flatten = this.FlattenLayer = (function() {
   }
 
   FlattenLayer.prototype.inferShapes = function(bottoms, tops) {
-    var i, j, k, l, ref, ref1, ref2, ref3, ref4, results, size;
+    var i, k, l, m, ref, ref1, ref2, ref3, ref4, results, size;
     if ((tops != null ? tops[0] : void 0) == null) {
       return;
     }
@@ -681,16 +768,16 @@ layers.Flatten = this.FlattenLayer = (function() {
       this.end_axis = bottoms[0].shape.length + this.end_axis;
     }
     tops[0].shape = [];
-    for (i = j = 0, ref = this.axis; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+    for (i = k = 0, ref = this.axis; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
       tops[0].shape.push(bottoms[0].shape[i]);
     }
     size = 1;
-    for (i = k = ref1 = this.axis, ref2 = this.end_axis; ref1 <= ref2 ? k <= ref2 : k >= ref2; i = ref1 <= ref2 ? ++k : --k) {
+    for (i = l = ref1 = this.axis, ref2 = this.end_axis; ref1 <= ref2 ? l <= ref2 : l >= ref2; i = ref1 <= ref2 ? ++l : --l) {
       size = size * bottoms[0].shape[i];
     }
     tops[0].shape.push(size);
     results = [];
-    for (i = l = ref3 = this.end_axis + 1, ref4 = bottoms[0].shape.length; ref3 <= ref4 ? l < ref4 : l > ref4; i = ref3 <= ref4 ? ++l : --l) {
+    for (i = m = ref3 = this.end_axis + 1, ref4 = bottoms[0].shape.length; ref3 <= ref4 ? m < ref4 : m > ref4; i = ref3 <= ref4 ? ++m : --m) {
       results.push(tops[0].shape.push(bottoms[0].shape[i]));
     }
     return results;
@@ -843,7 +930,7 @@ layers.Upsample = this.UpsampleLayer = (function() {
   };
 
   UpsampleLayer.prototype.checkParameters = function(bottoms, tops) {
-    var i, j, ref, ref1, ref2, ref3, ref4, results;
+    var i, k, ref, ref1, ref2, ref3, ref4, results;
     if ((bottoms != null ? bottoms.length : void 0) !== 2) {
       throw 'Inputs number of Upsample layer must be equal to two.';
     }
@@ -854,7 +941,7 @@ layers.Upsample = this.UpsampleLayer = (function() {
       throw 'Outputs number of Upsample layer must be equal to one.';
     }
     results = [];
-    for (i = j = 0, ref4 = bottoms[0].shape; 0 <= ref4 ? j < ref4 : j > ref4; i = 0 <= ref4 ? ++j : --j) {
+    for (i = k = 0, ref4 = bottoms[0].shape; 0 <= ref4 ? k < ref4 : k > ref4; i = 0 <= ref4 ? ++k : --k) {
       if (bottoms[0].shape[i] !== bottoms[1].shape[i]) {
         throw "Dimension " + i + " of Upsample layer: " + bottoms[0].shape[i] + " != " + (bottoms[1] / shape[i]) + ".";
       } else {
@@ -939,7 +1026,7 @@ layers.Reshape = this.ReshapeLayer = (function() {
   }
 
   ReshapeLayer.prototype.inferShapes = function(bottoms, tops) {
-    var end_axis, i, index, infer_size, j, k, l, m, partial_size, ref, ref1, ref2, ref3, ref4, ref5, results, total_axes, total_size;
+    var end_axis, i, index, infer_size, k, l, m, n, partial_size, ref, ref1, ref2, ref3, ref4, ref5, results, total_axes, total_size;
     if ((tops != null ? tops[0] : void 0) == null) {
       return;
     }
@@ -954,15 +1041,15 @@ layers.Reshape = this.ReshapeLayer = (function() {
       end_axis = this.axis + this.num_axes;
     }
     total_size = 1;
-    for (i = j = ref = this.axis, ref1 = end_axis; ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
+    for (i = k = ref = this.axis, ref1 = end_axis; ref <= ref1 ? k <= ref1 : k >= ref1; i = ref <= ref1 ? ++k : --k) {
       total_size *= bottoms[0].shape[i];
     }
     tops[0].shape = [];
-    for (i = k = 0, ref2 = this.axis; 0 <= ref2 ? k < ref2 : k > ref2; i = 0 <= ref2 ? ++k : --k) {
+    for (i = l = 0, ref2 = this.axis; 0 <= ref2 ? l < ref2 : l > ref2; i = 0 <= ref2 ? ++l : --l) {
       tops[0].shape.push(bottoms[0].shape[i]);
     }
     partial_size = 1;
-    for (i = l = 0, ref3 = this.shape.length; 0 <= ref3 ? l < ref3 : l > ref3; i = 0 <= ref3 ? ++l : --l) {
+    for (i = m = 0, ref3 = this.shape.length; 0 <= ref3 ? m < ref3 : m > ref3; i = 0 <= ref3 ? ++m : --m) {
       if (this.shape[i] === 0) {
         tops[0].shape.push(bottoms[0].shape[this.axis + i]);
         partial_size *= bottoms[0].shape[this.axis + i];
@@ -982,14 +1069,14 @@ layers.Reshape = this.ReshapeLayer = (function() {
     index = tops[0].shape.indexOf(-1);
     tops[0].shape.splice(index, 1, infer_size);
     results = [];
-    for (i = m = ref4 = end_axis + 1, ref5 = bottoms[0].shape.length; ref4 <= ref5 ? m < ref5 : m > ref5; i = ref4 <= ref5 ? ++m : --m) {
+    for (i = n = ref4 = end_axis + 1, ref5 = bottoms[0].shape.length; ref4 <= ref5 ? n < ref5 : n > ref5; i = ref4 <= ref5 ? ++n : --n) {
       results.push(tops[0].shape.push(bottoms[0].shape[i]));
     }
     return results;
   };
 
   ReshapeLayer.prototype.checkParameters = function(bottoms, tops) {
-    var i, j, num_minus1, ref;
+    var i, k, num_minus1, ref;
     if ((bottoms != null ? bottoms.length : void 0) !== 1) {
       throw "Reshape layer must have one input.";
     }
@@ -997,7 +1084,7 @@ layers.Reshape = this.ReshapeLayer = (function() {
       throw 'Outputs number of Reshape layer must be equal to one.';
     }
     num_minus1 = 0;
-    for (i = j = 0, ref = this.shape.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+    for (i = k = 0, ref = this.shape.length; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
       if (this.shape[i] === -1) {
         num_minus1 += 1;
       }
@@ -1024,7 +1111,7 @@ layers.Permute = this.PermuteLayer = (function() {
   }
 
   PermuteLayer.prototype.inferShapes = function(bottoms, tops) {
-    var i, index, j, k, l, len, m, original_orders, ref, ref1, ref2, ref3, results, results1, results2;
+    var i, index, k, l, len, m, n, original_orders, ref, ref1, ref2, ref3, results, results1, results2;
     if ((tops != null ? tops[0] : void 0) == null) {
       return;
     }
@@ -1032,19 +1119,19 @@ layers.Permute = this.PermuteLayer = (function() {
     if (this.orders == null) {
       this.orders = (function() {
         results = [];
-        for (var j = 0, ref = bottoms[0].shape.length; 0 <= ref ? j < ref : j > ref; 0 <= ref ? j++ : j--){ results.push(j); }
+        for (var k = 0, ref = bottoms[0].shape.length; 0 <= ref ? k < ref : k > ref; 0 <= ref ? k++ : k--){ results.push(k); }
         return results;
       }).apply(this);
     }
     if (this.orders.length !== bottoms[0].shape.length) {
       original_orders = (function() {
         results1 = [];
-        for (var k = 0, ref1 = bottoms[0].shape.length; 0 <= ref1 ? k < ref1 : k > ref1; 0 <= ref1 ? k++ : k--){ results1.push(k); }
+        for (var l = 0, ref1 = bottoms[0].shape.length; 0 <= ref1 ? l < ref1 : l > ref1; 0 <= ref1 ? l++ : l--){ results1.push(l); }
         return results1;
       }).apply(this);
       ref2 = this.orders;
-      for (l = 0, len = ref2.length; l < len; l++) {
-        i = ref2[l];
+      for (m = 0, len = ref2.length; m < len; m++) {
+        i = ref2[m];
         index = original_orders.indexOf(i);
         original_orders.splice(index, 1);
       }
@@ -1052,14 +1139,14 @@ layers.Permute = this.PermuteLayer = (function() {
     }
     tops[0].shape = [];
     results2 = [];
-    for (i = m = 0, ref3 = bottoms[0].shape.length; 0 <= ref3 ? m < ref3 : m > ref3; i = 0 <= ref3 ? ++m : --m) {
+    for (i = n = 0, ref3 = bottoms[0].shape.length; 0 <= ref3 ? n < ref3 : n > ref3; i = 0 <= ref3 ? ++n : --n) {
       results2.push(tops[0].shape.push(bottoms[0].shape[this.orders[i]]));
     }
     return results2;
   };
 
   PermuteLayer.prototype.checkParameters = function(bottoms, tops) {
-    var i, j, len, ref, ref1, results;
+    var i, k, len, ref, ref1, results;
     if ((bottoms != null ? bottoms.length : void 0) !== 1) {
       throw "Permute layer must have one input.";
     }
@@ -1071,8 +1158,8 @@ layers.Permute = this.PermuteLayer = (function() {
     }
     ref1 = this.orders;
     results = [];
-    for (j = 0, len = ref1.length; j < len; j++) {
-      i = ref1[j];
+    for (k = 0, len = ref1.length; k < len; k++) {
+      i = ref1[k];
       if (!(i < bottoms[0].shape.length)) {
         throw "Axis " + i + " of Permute layer larger than " + bottoms[0].shape.length + ".";
       } else {
@@ -1218,14 +1305,14 @@ layers.ArgMax = this.ArgMaxLayer = (function() {
   }
 
   ArgMaxLayer.prototype.inferShapes = function(bottoms, tops) {
-    var i, j, ref;
+    var i, k, ref;
     if ((tops != null ? tops[0] : void 0) == null) {
       return;
     }
     this.checkParameters(bottoms, tops);
     this.num_top_axes = bottoms[0].shape.length < 3 ? 3 : bottoms[0].shape.length;
     tops[0].shape = [];
-    for (i = j = 0, ref = this.num_top_axes; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+    for (i = k = 0, ref = this.num_top_axes; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
       tops[0].shape.push(1);
     }
     if (this.axis != null) {
@@ -1241,7 +1328,7 @@ layers.ArgMax = this.ArgMaxLayer = (function() {
   };
 
   ArgMaxLayer.prototype.checkParameters = function(bottoms, tops) {
-    var i, j, ref, size;
+    var i, k, ref, size;
     if ((bottoms != null ? bottoms.length : void 0) !== 1) {
       throw 'ArgMax layer must have one input.';
     }
@@ -1260,7 +1347,7 @@ layers.ArgMax = this.ArgMaxLayer = (function() {
       }
     } else {
       size = 1;
-      for (i = j = 0, ref = bottoms[0].shape.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+      for (i = k = 0, ref = bottoms[0].shape.length; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
         size *= bottoms[0].shape[i];
       }
       if (!(this.top_k <= size)) {
@@ -1286,7 +1373,7 @@ layers.Data = this.DataLayer = (function() {
   }
 
   DataLayer.prototype.inferShapes = function(bottoms, tops) {
-    var i, j, k, ref, ref1, results, results1;
+    var i, k, l, ref, ref1, results, results1;
     if ((tops != null ? tops[0] : void 0) == null) {
       return;
     }
@@ -1299,13 +1386,13 @@ layers.Data = this.DataLayer = (function() {
     } else {
       if (tops.length === this.outputShape.length) {
         results = [];
-        for (i = j = 0, ref = tops.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+        for (i = k = 0, ref = tops.length; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
           results.push(tops[i].shape = this.outputShape[i].dim);
         }
         return results;
       } else {
         results1 = [];
-        for (i = k = 0, ref1 = tops.length; 0 <= ref1 ? k < ref1 : k > ref1; i = 0 <= ref1 ? ++k : --k) {
+        for (i = l = 0, ref1 = tops.length; 0 <= ref1 ? l < ref1 : l > ref1; i = 0 <= ref1 ? ++l : --l) {
           results1.push(tops[i].shape = this.outputShape.slice(4 * i, 4 * (i + 1)));
         }
         return results1;
@@ -1397,13 +1484,13 @@ ConvolutionLayerBase = (function() {
   }
 
   ConvolutionLayerBase.prototype.inferShapes = function(bottoms, tops) {
-    var i, j, ref, results;
+    var i, k, ref, results;
     if ((tops != null ? tops[0] : void 0) == null) {
       return;
     }
     this.checkParameters(bottoms, tops);
     results = [];
-    for (i = j = 0, ref = tops.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+    for (i = k = 0, ref = tops.length; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
       results.push(this.inferShapesForOneBlob(bottoms[i], tops[i]));
     }
     return results;
@@ -1456,10 +1543,10 @@ layers.Convolution = this.ConvolutionLayer = (function(superClass) {
   }
 
   ConvolutionLayer.prototype.inferShapesForOneBlobInternal = function(input, output, padding, kernel, stride, dilation) {
-    var i, ii, j, kernelExtent, outDim, ref, ref1, results;
+    var i, ii, k, kernelExtent, outDim, ref, ref1, results;
     output[this.axis] = this.filters;
     results = [];
-    for (i = j = ref = this.axis + 1, ref1 = input.length; ref <= ref1 ? j < ref1 : j > ref1; i = ref <= ref1 ? ++j : --j) {
+    for (i = k = ref = this.axis + 1, ref1 = input.length; ref <= ref1 ? k < ref1 : k > ref1; i = ref <= ref1 ? ++k : --k) {
       ii = i - this.axis - 1;
       kernelExtent = dilation[ii] * (kernel[ii] - 1) + 1;
       outDim = (input[i] + 2 * padding[ii] - kernelExtent) / stride[ii] + 1;
@@ -1481,10 +1568,10 @@ layers.Deconvolution = this.DeconvolutionLayer = (function(superClass) {
   }
 
   DeconvolutionLayer.prototype.inferShapesForOneBlobInternal = function(input, output, padding, kernel, stride, dilation) {
-    var i, ii, j, kernelExtent, outDim, ref, ref1, results;
+    var i, ii, k, kernelExtent, outDim, ref, ref1, results;
     output[this.axis] = this.filters;
     results = [];
-    for (i = j = ref = this.axis + 1, ref1 = input.length; ref <= ref1 ? j < ref1 : j > ref1; i = ref <= ref1 ? ++j : --j) {
+    for (i = k = ref = this.axis + 1, ref1 = input.length; ref <= ref1 ? k < ref1 : k > ref1; i = ref <= ref1 ? ++k : --k) {
       ii = i - this.axis - 1;
       kernelExtent = dilation[ii] * (kernel[ii] - 1) + 1;
       outDim = stride[ii] * (input[i] - 1) + kernelExtent - 2 * padding[ii];
@@ -1515,7 +1602,7 @@ layers.Pooling = this.PoolingLayer = (function() {
   }
 
   PoolingLayer.prototype.inferShapes = function(bottoms, tops) {
-    var i, ii, inputShape, j, kernel, outDim, outDimRounded, outputShape, padding, ref, stride;
+    var i, ii, inputShape, k, kernel, outDim, outDimRounded, outputShape, padding, ref, stride;
     if ((tops != null ? tops[0] : void 0) == null) {
       return;
     }
@@ -1525,7 +1612,7 @@ layers.Pooling = this.PoolingLayer = (function() {
     padding = getParameterAsArray(this.padding, this.spatialDimSize, 'padding');
     stride = getParameterAsArray(this.stride, this.spatialDimSize, 'stride');
     kernel = this.getKernelSizes(inputShape);
-    for (i = j = 0, ref = this.spatialDimSize; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+    for (i = k = 0, ref = this.spatialDimSize; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
       ii = inputShape.length - this.spatialDimSize + i;
       outDim = (inputShape[ii] + 2 * padding[i] - kernel[i]) / stride[i];
       outDimRounded = (Math.floor(Math.ceil(outDim))) + 1;
@@ -1626,7 +1713,7 @@ layers.Concat = this.ConcatLayer = (function() {
   }
 
   ConcatLayer.prototype.inferShapes = function(bottoms, tops) {
-    var bottom, firstInputShape, j, len, outputShape;
+    var bottom, firstInputShape, k, len, outputShape;
     if ((tops != null ? tops[0] : void 0) == null) {
       return;
     }
@@ -1634,31 +1721,31 @@ layers.Concat = this.ConcatLayer = (function() {
     firstInputShape = bottoms[0].shape;
     outputShape = firstInputShape.slice(0);
     outputShape[this.axis] = 0;
-    for (j = 0, len = bottoms.length; j < len; j++) {
-      bottom = bottoms[j];
+    for (k = 0, len = bottoms.length; k < len; k++) {
+      bottom = bottoms[k];
       outputShape[this.axis] += bottom.shape[this.axis];
     }
     return tops[0].shape = outputShape;
   };
 
   ConcatLayer.prototype.checkParameters = function(bottoms, tops) {
-    var bottom, firstShape, inputShapes, j, len, results, shape;
+    var bottom, firstShape, inputShapes, k, len, results, shape;
     if ((bottoms != null ? bottoms[0] : void 0) == null) {
       throw 'Concat layer must have at least one bottom blob.';
     }
     firstShape = bottoms[0].shape;
     inputShapes = (function() {
-      var j, len, results;
+      var k, len, results;
       results = [];
-      for (j = 0, len = bottoms.length; j < len; j++) {
-        bottom = bottoms[j];
+      for (k = 0, len = bottoms.length; k < len; k++) {
+        bottom = bottoms[k];
         results.push(bottom.shape);
       }
       return results;
     })();
     results = [];
-    for (j = 0, len = inputShapes.length; j < len; j++) {
-      shape = inputShapes[j];
+    for (k = 0, len = inputShapes.length; k < len; k++) {
+      shape = inputShapes[k];
       if (!this.checkInputShapeAxes(firstShape, shape)) {
         throw "Concat layer received incorrect input shapes: " + ((shapesToString(inputShapes)) + ". ") + "All axes except axis along which concatenation " + "is performing must have the same sizes.";
       } else {
@@ -1669,11 +1756,11 @@ layers.Concat = this.ConcatLayer = (function() {
   };
 
   ConcatLayer.prototype.checkInputShapeAxes = function(firstShape, shape) {
-    var i, j, ref;
+    var i, k, ref;
     if (firstShape.length !== shape.length) {
       return false;
     }
-    for (i = j = 0, ref = shape.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+    for (i = k = 0, ref = shape.length; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
       if (i !== this.axis && firstShape[i] !== shape[i]) {
         return false;
       }
@@ -1702,23 +1789,23 @@ layers.Eltwise = this.EltwiseLayer = (function() {
   };
 
   EltwiseLayer.prototype.checkParameters = function(bottoms, tops) {
-    var bottom, firstShape, inputShapes, j, len, results, shape;
+    var bottom, firstShape, inputShapes, k, len, results, shape;
     if ((bottoms != null ? bottoms[0] : void 0) == null) {
       throw 'Eltwise layer must have at least one input.';
     }
     inputShapes = (function() {
-      var j, len, results;
+      var k, len, results;
       results = [];
-      for (j = 0, len = bottoms.length; j < len; j++) {
-        bottom = bottoms[j];
+      for (k = 0, len = bottoms.length; k < len; k++) {
+        bottom = bottoms[k];
         results.push(bottom.shape);
       }
       return results;
     })();
     firstShape = inputShapes[0];
     results = [];
-    for (j = 0, len = inputShapes.length; j < len; j++) {
-      shape = inputShapes[j];
+    for (k = 0, len = inputShapes.length; k < len; k++) {
+      shape = inputShapes[k];
       if (!areShapesEqual(firstShape, shape)) {
         throw "Eltwise layer received incorrect input shapes: " + ((shapesToString(inputShapes)) + ". ") + "All axes must have the same sizes.";
       } else {
@@ -1742,13 +1829,13 @@ layers.Crop = this.CropLayer = (function() {
   }
 
   CropLayer.prototype.inferShapes = function(bottoms, tops) {
-    var i, j, outputShape, ref, ref1;
+    var i, k, outputShape, ref, ref1;
     if ((tops != null ? tops[0] : void 0) == null) {
       return;
     }
     this.checkParameters(bottoms, tops);
     outputShape = bottoms[0].shape.slice(0);
-    for (i = j = ref = this.axis, ref1 = outputShape.length; ref <= ref1 ? j < ref1 : j > ref1; i = ref <= ref1 ? ++j : --j) {
+    for (i = k = ref = this.axis, ref1 = outputShape.length; ref <= ref1 ? k < ref1 : k > ref1; i = ref <= ref1 ? ++k : --k) {
       outputShape[i] = bottoms[1].shape[i];
     }
     return tops[0].shape = outputShape;
@@ -1771,14 +1858,14 @@ layers.Split = this.SplitLayer = (function() {
   }
 
   SplitLayer.prototype.inferShapes = function(bottoms, tops) {
-    var i, j, outputShape, ref, results;
+    var i, k, outputShape, ref, results;
     if ((tops != null ? tops[0] : void 0) == null) {
       return;
     }
     this.checkParameters(bottoms, tops);
     outputShape = bottoms[0].shape.slice(0);
     results = [];
-    for (i = j = 0, ref = tops.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+    for (i = k = 0, ref = tops.length; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
       results.push(tops[i].shape = outputShape);
     }
     return results;
@@ -1835,11 +1922,11 @@ exports.inferTopShapes = function(node) {
     layer = new LayerType(node.attribs);
     layer.inferShapes(node.bottoms, node.tops);
     return (function() {
-      var j, len, ref, results;
+      var k, len, ref, results;
       ref = node.tops;
       results = [];
-      for (j = 0, len = ref.length; j < len; j++) {
-        top = ref[j];
+      for (k = 0, len = ref.length; k < len; k++) {
+        top = ref[k];
         results.push(top.shape);
       }
       return results;

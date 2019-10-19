@@ -328,6 +328,22 @@ runInterpTasks = (tasks) ->
         return text
     runLayerTasks tasks, makeInterpTaskName, compareInterpOutput
 
+runSliceTasks = (tasks) ->
+    makeCaffeSliceParams = (slice_dim) ->
+        params = { }
+        params.slice_dim = slice_dim if slice_dim?
+        return { slice_param: params }
+    compareSliceOutput = (task) ->
+        compareLayerOutput layers.SliceLayer, makeCaffeSliceParams, task
+    makeSliceTaskName = (task) ->
+        [inputShapes, outputShapes, params] = task
+        text = "from [ #{task[0]} ] to ["
+        for shape in outputShapes
+            text += " [ #{shape} ]"
+        text += " ] where slice_dim = #{params[0]}" if params[0]?
+        return text
+    runLayerTasks tasks, makeSliceTaskName, compareSliceOutput
+
 describe 'Compute 2D Convolution output shape', ->
     # [ input shape, expecting output shape ]
     # null means default parameter value
@@ -570,3 +586,10 @@ describe 'Compute Interp output shape', ->
         [ [1, 4, 5, 5], [1, 4, 15, 25], [15, 25] ]
     ]
     runInterpTasks tasks
+
+describe 'Compute Slice output shape', ->
+    # [ bottom[0] shape, expecting output shape, [ slice_dim ] ]
+    tasks = [
+        [ [1, 4, 5, 5], [[1, 2, 5, 5], [1, 2, 5, 5]], [1] ]
+    ]
+    runSliceTasks tasks
