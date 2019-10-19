@@ -683,9 +683,9 @@ layers.Slice = this.SliceLayer = (function() {
     }
     if (this.slice_point != null) {
       prev = 0;
-      for (i = m = 0, ref2 = this.slice_point; 0 <= ref2 ? m < ref2 : m > ref2; i = 0 <= ref2 ? ++m : --m) {
-        tops[i].shape[this.axis] = slice_point[i] - prev;
-        prev = slice_point[i];
+      for (i = m = 0, ref2 = this.slice_point.length; 0 <= ref2 ? m < ref2 : m > ref2; i = 0 <= ref2 ? ++m : --m) {
+        tops[i].shape[this.axis] = this.slice_point[i] - prev;
+        prev = this.slice_point[i];
       }
       return tops[tops.length - 1].shape[this.axis] = bottoms[0].shape[this.axis] - prev;
     } else {
@@ -715,6 +715,9 @@ layers.Slice = this.SliceLayer = (function() {
         this.axis = this.slice_dim;
       }
     }
+    if (this.axis < 0) {
+      this.axis = bottoms[0].shape.length + this.axis;
+    }
     if (!(this.axis < bottoms[0].shape.length)) {
       throw "Axis " + this.axis + " of Slice layer greater than " + this.bottms[0].shape.length + ".";
     }
@@ -732,9 +735,6 @@ layers.Slice = this.SliceLayer = (function() {
       }
       return results;
     } else {
-      if (this.axis < 0) {
-        this.axis = bottoms[0].shape.length + this.axis;
-      }
       if (bottoms[0].shape[this.axis] % tops.length !== 0) {
         throw "Number of outputs " + tops.length + " cannot divide dimension.";
       }

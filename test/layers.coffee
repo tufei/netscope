@@ -329,9 +329,13 @@ runInterpTasks = (tasks) ->
     runLayerTasks tasks, makeInterpTaskName, compareInterpOutput
 
 runSliceTasks = (tasks) ->
-    makeCaffeSliceParams = (slice_dim) ->
+    makeCaffeSliceParams = (slice_dim, axis, slice_point) ->
         params = { }
-        params.slice_dim = slice_dim if slice_dim?
+        if axis?
+            params.axis = axis
+            params.slice_point = slice_point if slice_point?
+        else
+            params.slice_dim = slice_dim if slice_dim?
         return { slice_param: params }
     compareSliceOutput = (task) ->
         compareLayerOutput layers.SliceLayer, makeCaffeSliceParams, task
@@ -341,6 +345,8 @@ runSliceTasks = (tasks) ->
         for shape in outputShapes
             text += " [ #{shape} ]"
         text += " ] where slice_dim = #{params[0]}" if params[0]?
+        text += " and axis = #{params[1]}" if params[1]?
+        text += " and slice_point = #{params[2]}" if params[2]?
         return text
     runLayerTasks tasks, makeSliceTaskName, compareSliceOutput
 
@@ -588,8 +594,9 @@ describe 'Compute Interp output shape', ->
     runInterpTasks tasks
 
 describe 'Compute Slice output shape', ->
-    # [ bottom[0] shape, expecting output shape, [ slice_dim ] ]
+    # [ bottom[0] shape, expecting output shape, [ slice_dim axis slice_point slice_point ] ]
     tasks = [
         [ [1, 4, 5, 5], [[1, 2, 5, 5], [1, 2, 5, 5]], [1] ]
+        [ [1, 6, 5, 5], [[1, 1, 5, 5], [1, 3, 5, 5], [1, 2, 5, 5]], [1, -3, [1, 4]] ]
     ]
     runSliceTasks tasks

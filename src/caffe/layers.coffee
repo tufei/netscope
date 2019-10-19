@@ -107,9 +107,9 @@ class @SliceLayer
                 tops[i].shape.push(bottoms[0].shape[j])
         if @slice_point?
             prev = 0
-            for i in [0...@slice_point]
-                tops[i].shape[@axis] = slice_point[i] - prev
-                prev = slice_point[i]
+            for i in [0...@slice_point.length]
+                tops[i].shape[@axis] = @slice_point[i] - prev
+                prev = @slice_point[i]
             tops[tops.length - 1].shape[@axis] = bottoms[0].shape[@axis] - prev
         else
             for i in [0...tops.length]
@@ -128,6 +128,7 @@ class @SliceLayer
                 unless @slice_dim >= 0
                     throw "Slice dimension #{@slice_dim} must be non-negative."
                 @axis = @slice_dim
+        @axis = bottoms[0].shape.length + @axis if @axis < 0
         unless @axis < bottoms[0].shape.length
             throw "Axis #{@axis} of Slice layer greater than #{@bottms[0].shape.length}."
         if @slice_point?
@@ -139,7 +140,6 @@ class @SliceLayer
                     throw "Invalid slice point #{@slice_point[i]}."
                 prev = @slice_point[i]
         else
-            @axis = bottoms[0].shape.length + @axis if @axis < 0
             unless bottoms[0].shape[@axis] % tops.length == 0
                 throw "Number of outputs #{tops.length} cannot divide dimension."
 
