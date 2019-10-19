@@ -96,7 +96,8 @@ class @SliceLayer
         params = attribs?.slice_param
         @axis = getValueOrDefault params?.axis, 1
         @slice_dim = getValueOrDefault params?.slice_dim, -1
-        @slice_point = params?.slice_point
+        if params?.slice_point?
+            @slice_point = utils.asArray params.slice_point
 
     inferShapes: (bottoms, tops) =>
         unless tops?[0]? then return

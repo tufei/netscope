@@ -666,7 +666,9 @@ layers.Slice = this.SliceLayer = (function() {
     params = attribs != null ? attribs.slice_param : void 0;
     this.axis = getValueOrDefault(params != null ? params.axis : void 0, 1);
     this.slice_dim = getValueOrDefault(params != null ? params.slice_dim : void 0, -1);
-    this.slice_point = params != null ? params.slice_point : void 0;
+    if ((params != null ? params.slice_point : void 0) != null) {
+      this.slice_point = utils.asArray(params.slice_point);
+    }
   }
 
   SliceLayer.prototype.inferShapes = function(bottoms, tops) {
